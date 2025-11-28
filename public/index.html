@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Windows 11 网页版</title>
+    <link rel="stylesheet" href="./styles.css">
+
+</head>
+
+<body>
+    <!-- 桌面图标 -->
+    <div class="desktop">
+        <div class="desktop-icon" onclick="openApp('explorer')">
+            <img src="./icons/weibiaoti-_huabanfuben.png" alt="文件资源管理器">
+            <span>文件资源管理器</span>
+        </div>
+        <div class="desktop-icon" onclick="openApp('browser')">
+            <img src="./icons/browser.svg" alt="浏览器">
+            <span>Microsoft Edge</span>
+        </div>
+        <div class="desktop-icon" onclick="openApp('settings')">
+            <img src="./icons/settings.svg" alt="设置">
+            <span>设置</span>
+        </div>
+        <div class="desktop-icon" onclick="openApp('store')">
+            <img src="./icons/store.svg" alt="应用商店">
+            <span>Microsoft Store</span>
+        </div>
+    </div>
+
+    <!-- 任务栏 -->
+    <div class="taskbar">
+        <div class="start-button" onclick="toggleStartMenu()">
+            <img src="./icons/start.svg" alt="开始">
+        </div>
+        <div class="taskbar-apps">
+            <div class="taskbar-app" onclick="openApp('explorer')">
+                <img src="./icons/explorer.svg" alt="文件资源管理器">
+            </div>
+            <div class="taskbar-app" onclick="openApp('browser')">
+                <img src="./icons/browser.svg" alt="浏览器">
+            </div>
+            <div class="taskbar-app" onclick="openApp('settings')">
+                <img src="./icons/settings.svg" alt="设置">
+            </div>
+        </div>
+        <div class="taskbar-center">
+            <!-- 搜索框可以放在这里 -->
+        </div>
+        <div class="taskbar-widgets">
+            <div onclick="toggleWidget()">
+                <span id="time">12:00</span>
+            </div>
+            <div>
+                <span>WiFi</span>
+            </div>
+            <div>
+                <span>100%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 开始菜单 -->
+    <div class="start-menu" id="startMenu">
+        <div class="start-menu-header">
+            <h2>开始</h2>
+            <div class="start-menu-search">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="white">
+                    <path
+                        d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                </svg>
+                <input type="text" placeholder="在此处键入以进行搜索">
+            </div>
+        </div>
+        <div class="start-menu-apps">
+            <div class="start-menu-app" onclick="openApp('explorer')">
+                <img src="./icons/explorer.svg" alt="文件资源管理器">
+                <span>文件资源管理器</span>
+            </div>
+            <div class="start-menu-app" onclick="openApp('browser')">
+                <img src="./icons/browser.svg" alt="浏览器">
+                <span>Microsoft Edge</span>
+            </div>
+            <div class="start-menu-app" onclick="openApp('settings')">
+                <img src="./icons/settings.svg" alt="设置">
+                <span>设置</span>
+            </div>
+            <div class="start-menu-app" onclick="openApp('store')">
+                <img src="./icons/store.svg" alt="应用商店">
+                <span>Microsoft Store</span>
+            </div>
+            <!-- 更多应用可以添加在这里 -->
+        </div>
+        <div class="start-menu-footer">
+            <div class="user">
+                <img src="./icons/user.svg" alt="用户">
+                <span>用户</span>
+            </div>
+            <div class="power">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="white">
+                    <path
+                        d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM10 3C10.55 3 11 3.45 11 4V10C11 10.55 10.55 11 10 11C9.45 11 9 10.55 9 10V4C9 3.45 9.45 3 10 3ZM10 17C7.79 17 6 15.21 6 13C6 10.79 7.79 9 10 9C12.21 9 14 10.79 14 13C14 15.21 12.21 17 10 17Z" />
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文件资源管理器窗口 -->
+    <div class="window" id="explorerWindow">
+        <div class="window-header">
+            <div class="window-title">文件资源管理器</div>
+            <div class="window-controls">
+                <div class="window-control minimize">-</div>
+                <div class="window-control maximize">□</div>
+                <div class="window-control close" onclick="closeApp('explorer')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="explorer-nav">
+                <button>←</button>
+                <button>→</button>
+                <button>↑</button>
+            </div>
+            <div class="explorer-content">
+                <div class="explorer-item">
+                    <img src="./icons/doc.svg" alt="文档">
+                    <span>文档</span>
+                </div>
+                <div class="explorer-item">
+                    <img src="./icons/image.svg" alt="图片">
+                    <span>图片</span>
+                </div>
+                <div class="explorer-item">
+                    <img src="./icons/music.svg" alt="音乐">
+                    <span>音乐</span>
+                </div>
+                <div class="explorer-item">
+                    <img src="./icons/video.svg" alt="视频">
+                    <span>视频</span>
+                </div>
+                <div class="explorer-item">
+                    <img src="./icons/download.svg" alt="下载">
+                    <span>下载</span>
+                </div>
+                <div class="explorer-item">
+                    <img src="./icons/desktop.svg" alt="桌面">
+                    <span>桌面</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浏览器窗口 -->
+    <div class="window" id="browserWindow">
+        <div class="window-header">
+            <div class="window-title">Microsoft Edge</div>
+            <div class="window-controls">
+                <div class="window-control minimize">-</div>
+                <div class="window-control maximize">□</div>
+                <div class="window-control close" onclick="closeApp('browser')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="browser-nav">
+                <button>←</button>
+                <button>→</button>
+                <button>⟳</button>
+                <div class="browser-address">
+                    <input type="text" value="https://www.microsoft.com">
+                </div>
+            </div>
+            <div class="browser-content">
+                <iframe src="#" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置窗口 -->
+    <div class="window" id="settingsWindow">
+        <div class="window-header">
+            <div class="window-title">设置</div>
+            <div class="window-controls">
+                <div class="window-control minimize">-</div>
+                <div class="window-control maximize">□</div>
+                <div class="window-control close" onclick="closeApp('settings')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="settings-nav">
+                <div class="settings-nav-item active">系统</div>
+                <div class="settings-nav-item">个性化</div>
+                <div class="settings-nav-item">应用</div>
+                <div class="settings-nav-item">账户</div>
+            </div>
+            <div class="settings-content">
+                <div class="setting-item">
+                    <h3>显示</h3>
+                    <p>更改文本、应用和其他项目的大小</p>
+                    <select>
+                        <option>100% (推荐)</option>
+                        <option>125%</option>
+                        <option>150%</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <h3>电源和电池</h3>
+                    <p>屏幕和睡眠</p>
+                    <div>
+                        <label>使用电池电源时，在以下时间后关闭屏幕:</label>
+                        <select>
+                            <option>5分钟</option>
+                            <option>10分钟</option>
+                            <option>15分钟</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="setting-item">
+                    <h3>存储</h3>
+                    <p>存储感知</p>
+                    <label class="toggle">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <span>自动释放空间</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 应用商店窗口 -->
+    <div class="window" id="storeWindow">
+        <div class="window-header">
+            <div class="window-title">Microsoft Store</div>
+            <div class="window-controls">
+                <div class="window-control minimize">-</div>
+                <div class="window-control maximize">□</div>
+                <div class="window-control close" onclick="closeApp('store')">×</div>
+            </div>
+        </div>
+        <div class="window-content">
+            <div class="store-header">
+                <h2>应用商店</h2>
+                <div class="store-search">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="#666">
+                        <path
+                            d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                    </svg>
+                    <input type="text" placeholder="搜索应用">
+                </div>
+            </div>
+            <div class="store-categories">
+                <div class="store-category active">主页</div>
+                <div class="store-category">游戏</div>
+                <div class="store-category">生产力</div>
+                <div class="store-category">娱乐</div>
+                <div class="store-category">教育</div>
+            </div>
+            <div class="store-apps">
+                <div class="store-app">
+                    <img src="./icons/app-placeholder.svg" alt="应用">
+                    <div class="store-app-info">
+                        <h4>Microsoft Word</h4>
+                        <p>Microsoft Corporation</p>
+                        <button>获取</button>
+                    </div>
+                </div>
+                <div class="store-app">
+                    <img src="./icons/app-placeholder.svg" alt="应用">
+                    <div class="store-app-info">
+                        <h4>Microsoft Excel</h4>
+                        <p>Microsoft Corporation</p>
+                        <button>获取</button>
+                    </div>
+                </div>
+                <div class="store-app">
+                    <img src="./icons/app-placeholder.svg" alt="应用">
+                    <div class="store-app-info">
+                        <h4>Microsoft PowerPoint</h4>
+                        <p>Microsoft Corporation</p>
+                        <button>获取</button>
+                    </div>
+                </div>
+                <div class="store-app">
+                    <img src="./icons/app-placeholder.svg" alt="应用">
+                    <div class="store-app-info">
+                        <h4>Spotify</h4>
+                        <p>Spotify AB</p>
+                        <button>获取</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 天气小部件 -->
+    <div class="widget" id="weatherWidget" style="display: none;">
+        <div class="widget-header">
+            <div class="widget-title">天气</div>
+            <div class="widget-close" onclick="toggleWidget()">×</div>
+        </div>
+        <div class="weather-info">
+            <div class="weather-icon">☀️</div>
+            <div class="weather-temp">24°C</div>
+        </div>
+        <div class="weather-details">
+            <div class="weather-detail">湿度: 65%</div>
+            <div class="weather-detail">风速: 5 km/h</div>
+            <div class="weather-detail">体感温度: 26°C</div>
+            <div class="weather-detail">紫外线: 中等</div>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+
+</body>
+
+</html>

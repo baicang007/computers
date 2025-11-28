@@ -9,7 +9,15 @@
 	"compatibility_date": "2025-11-20",
 	"observability": {
 		"enabled": true
-	}
+	},
+	"assets": { "directory": "./public", "binding": "ASSETS" },
+	"d1_databases": [
+		{
+			"binding": "computers",
+			"database_name": "computers",
+			"database_id": "2e825664-dddd-46be-8d4e-24b9e11d82d9"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
