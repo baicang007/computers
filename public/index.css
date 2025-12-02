@@ -1,0 +1,224 @@
+/* index.css - 仿 Windows 11 桌面样式 (半透明毛玻璃风格) */
+:root {
+	--desktop-width: 1920px;
+	--desktop-height: 1080px;
+	--taskbar-height: 56px;
+	--glass-bg: rgba(255, 255, 255, 0.06);
+	--glass-border: rgba(255, 255, 255, 0.12);
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+	background: #111;
+}
+
+.win-wrapper {
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.win-desktop {
+	width: var(--desktop-width);
+	height: var(--desktop-height);
+	position: relative;
+	overflow: hidden;
+	border-radius: 8px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.wallpaper {
+	position: absolute;
+	inset: 0;
+	background-image: url('/wallpaper/000738ds60I.jpg');
+	background-size: cover;
+	background-position: center;
+	filter: saturate(1.06) contrast(1.04) brightness(0.98);
+}
+
+.taskbar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: var(--taskbar-height);
+	display: flex;
+	align-items: center;
+	padding: 0 12px;
+	gap: 12px;
+	box-sizing: border-box;
+	backdrop-filter: blur(10px) saturate(1.2);
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+	border-top: 1px solid var(--glass-border);
+}
+
+.start-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	background: var(--glass-bg);
+	border: none;
+	border-radius: 8px;
+	color: white;
+	cursor: pointer;
+	transition: background 0.18s ease, transform 0.08s ease;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.start-button:hover {
+	transform: translateY(-1px);
+}
+.start-icon {
+	font-size: 18px;
+}
+.sr-only {
+	position: absolute;
+	left: -10000px;
+	width: 1px;
+	height: 1px;
+	top: auto;
+	overflow: hidden;
+}
+
+.start-menu {
+	position: absolute;
+	left: 12px;
+	bottom: calc(var(--taskbar-height) + 10px);
+	width: 320px;
+	border-radius: 12px;
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	box-sizing: border-box;
+	backdrop-filter: blur(16px) saturate(1.1);
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
+	opacity: 0;
+	transform: translateY(6px) scale(0.98);
+	pointer-events: none;
+	transition: opacity 0.14s ease, transform 0.12s ease;
+}
+
+.start-menu[aria-hidden='false'] {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+	pointer-events: auto;
+}
+
+.start-user-btn {
+	width: 100%;
+	text-align: left;
+	background: transparent;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 8px;
+	color: #fff;
+	font-weight: 600;
+	cursor: pointer;
+}
+.start-user-btn:hover {
+	background: rgba(255, 255, 255, 0.04);
+}
+
+/* Add a subtle edge when desktop is smaller than viewport */
+@media (max-width: 1400px) {
+	.win-wrapper {
+		transform: scale(0.72);
+		transform-origin: center;
+	}
+}
+
+@media (max-width: 1024px) {
+	.win-wrapper {
+		transform: scale(0.5);
+		transform-origin: center;
+	}
+}
+
+/* Auth overlay */
+.auth-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1200;
+}
+.auth-overlay[aria-hidden='true'] {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.auth-box {
+	width: 360px;
+	padding: 20px;
+	border-radius: 14px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+	backdrop-filter: blur(12px) saturate(1.1);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+	color: #fff;
+}
+.auth-box h2 {
+	margin: 0 0 12px 0;
+	font-size: 18px;
+}
+.form-group {
+	margin-bottom: 8px;
+}
+.form-group label {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.9);
+}
+.form-group input {
+	width: 100%;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255, 255, 255, 0.06);
+	background: rgba(255, 255, 255, 0.02);
+	color: #fff;
+}
+.form-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 12px;
+}
+.form-actions .link {
+	background: transparent;
+	border: none;
+	color: #aee3ff;
+	text-decoration: underline;
+	cursor: pointer;
+}
+.form-actions button {
+	padding: 8px 12px;
+	border-radius: 8px;
+	border: none;
+	cursor: pointer;
+	background: rgba(255, 255, 255, 0.05);
+	color: #fff;
+}
+.auth-error {
+	margin-top: 8px;
+	color: #ff9b9b;
+	font-size: 13px;
+	min-height: 16px;
+}
+
+/* hide register box by default */
+.register-box {
+	display: none;
+}
+.register-box[aria-hidden='false'] {
+	display: block;
+}
