@@ -14,6 +14,7 @@
     <div class="win-wrapper">
         <div class="win-desktop" id="desktop" role="application" aria-label="Windows11 Desktop">
             <div class="wallpaper" aria-hidden="true"></div>
+            <div class="desktop-icons" id="desktopIcons" aria-hidden="false"></div>
             <!-- Taskbar -->
             <div class="taskbar" role="toolbar" aria-label="Taskbar">
                 <button class="start-button" id="startButton" aria-expanded="false" aria-controls="startMenu"
@@ -72,6 +73,45 @@
                         <button id="showLoginBtn" class="link">返回登录</button>
                     </div>
                     <div class="auth-error" id="registerError"></div>
+                </div>
+            </div>
+            <!-- Desktop custom context menu -->
+            <ul class="context-menu" id="desktopContextMenu" role="menu" aria-hidden="true">
+                <li class="cm-item has-sub" role="menuitem" tabindex="-1">
+                    新建
+                    <ul class="submenu" role="menu">
+                        <li class="cm-item" role="menuitem" tabindex="-1">文件夹</li>
+                        <li class="cm-item" role="menuitem" tabindex="-1" id="cm-new-shortcut">快捷方式</li>
+                    </ul>
+                </li>
+                <li class="cm-item has-sub" role="menuitem" tabindex="-1">
+                    查看
+                    <ul class="submenu" role="menu">
+                        <li class="cm-item" role="menuitem" tabindex="-1">大图标</li>
+                        <li class="cm-item" role="menuitem" tabindex="-1">中图标</li>
+                        <li class="cm-item" role="menuitem" tabindex="-1">小图标</li>
+                    </ul>
+                </li>
+                <li class="cm-item" role="menuitem" tabindex="-1">个性化</li>
+            </ul>
+
+            <!-- Create Shortcut Modal -->
+            <div class="shortcut-modal" id="createShortcutModal" aria-hidden="true">
+                <div class="shortcut-box">
+                    <h3>创建快捷方式</h3>
+                    <div class="form-group">
+                        <label for="scName">名称</label>
+                        <input id="scName" type="text" placeholder="名称">
+                    </div>
+                    <div class="form-group">
+                        <label for="scUrl">网址</label>
+                        <input id="scUrl" type="url" placeholder="https://example.com">
+                    </div>
+                    <div class="form-actions">
+                        <button id="scCreateBtn">确定</button>
+                        <button id="scCancelBtn" class="link">取消</button>
+                    </div>
+                    <div class="auth-error" id="scError"></div>
                 </div>
             </div>
         </div>

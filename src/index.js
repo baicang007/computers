@@ -40,9 +40,43 @@ async function ensureSessionTable(db) {
 	await db.prepare(sql).run();
 }
 
+async function ensureDesktopItemsTable(db) {
+	const sql = `CREATE TABLE IF NOT EXISTS desktop_items(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER,
+		name TEXT,
+		url TEXT,
+		icon TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	)`;
+	await db.prepare(sql).run();
+}
+
 async function ensureTables(db) {
 	await ensureUserTable(db);
 	await ensureSessionTable(db);
+	await ensureDesktopItemsTable(db);
+}
+
+// helper: resolve user from request via session cookie
+async function getUserFromRequest(request, env) {
+	const cookie = request.headers.get('Cookie') || '';
+	const match = cookie
+		.split(';')
+		.map((s) => s.trim())
+		.find((s) => s.startsWith('session='));
+	if (!match) return null;
+	const token = match.split('=')[1];
+	if (!token) return null;
+	const rows = await env.computers
+		.prepare(
+			`SELECT users.id, users.username, users.email FROM sessions JOIN users ON sessions.user_id = users.id WHERE sessions.token = ? AND sessions.expires_at > datetime('now')`
+		)
+		.bind(token)
+		.all();
+	const user = rows.results && rows.results[0];
+	return user || null;
 }
 
 function generateToken() {
@@ -86,6 +120,48 @@ export default {
 
 		// API handlers
 		if (url.pathname.startsWith('/api')) {
+			// Desktop items endpoints
+			if (url.pathname === '/api/desktop-items' && request.method === 'GET') {
+				const user = await getUserFromRequest(request, env);
+				if (!user)
+					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				const rows = await env.computers
+					.prepare(`SELECT id, name, url, icon, created_at FROM desktop_items WHERE user_id = ? ORDER BY created_at ASC`)
+					.bind(user.id)
+					.all();
+				return new Response(JSON.stringify({ items: rows.results || [] }), {
+					status: 200,
+					headers: { 'Content-Type': 'application/json' },
+				});
+			}
+			if (url.pathname === '/api/desktop-items' && request.method === 'POST') {
+				const user = await getUserFromRequest(request, env);
+				if (!user)
+					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				try {
+					const body = await request.json();
+					const name = String(body.name || '').trim();
+					const urlv = String(body.url || '').trim();
+					const icon = String(body.icon || '/icons/web.svg');
+					if (!name || !urlv)
+						return new Response(JSON.stringify({ error: 'Missing fields' }), {
+							status: 400,
+							headers: { 'Content-Type': 'application/json' },
+						});
+					const res = await env.computers
+						.prepare(`INSERT INTO desktop_items (user_id,name,url,icon) VALUES (?,?,?,?)`)
+						.bind(user.id, name, urlv, icon)
+						.run();
+					// return the created item id
+					return new Response(JSON.stringify({ success: true, id: res.lastRowId || null }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				} catch (e) {
+					return new Response(JSON.stringify({ error: 'invalid body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+				}
+			}
+
 			// API: must check method
 			await ensureTables(env.computers);
 			if (url.pathname === '/api/register' && request.method === 'POST') {

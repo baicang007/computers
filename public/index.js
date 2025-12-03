@@ -20,19 +20,66 @@
 		e.stopPropagation();
 		toggleMenu();
 	});
-	// Close when clicking outside
+	// Close when clicking outside (also hide context menu if open)
 	document.addEventListener('click', (e) => {
 		if (!startMenu.contains(e.target) && !startButton.contains(e.target)) {
 			closeMenu();
 		}
+		if (contextMenu && !contextMenu.contains(e.target)) {
+			hideContextMenu();
+		}
 	});
 	// Close on Escape key
 	document.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape') closeMenu();
+		if (e.key === 'Escape') {
+			closeMenu();
+			hideContextMenu();
+		}
 	});
-	// Prevent context menu on the desktop (optional) so clicks are more like Windows
+	// Custom desktop context menu
+	const contextMenu = document.getElementById('desktopContextMenu');
+	function hideContextMenu() {
+		if (!contextMenu) return;
+		contextMenu.setAttribute('aria-hidden', 'true');
+		contextMenu.style.left = '-9999px';
+		contextMenu.style.top = '-9999px';
+		contextMenu.classList.remove('sub-left');
+	}
+	function showContextMenu(x, y) {
+		if (!contextMenu) return;
+		// position relative to desktop container
+		const desktopRect = desktop.getBoundingClientRect();
+		let left = x - desktopRect.left;
+		let top = y - desktopRect.top;
+		contextMenu.style.left = left + 'px';
+		contextMenu.style.top = top + 'px';
+		contextMenu.setAttribute('aria-hidden', 'false');
+		// adjust if overflowing right/bottom
+		const menuRect = contextMenu.getBoundingClientRect();
+		const padding = 8;
+		if (menuRect.right > desktopRect.right) {
+			// move left
+			const shift = menuRect.right - desktopRect.right + padding;
+			contextMenu.style.left = left - shift + 'px';
+			// mark to open submenus to left
+			contextMenu.classList.add('sub-left');
+		} else {
+			contextMenu.classList.remove('sub-left');
+		}
+		if (menuRect.bottom > desktopRect.bottom) {
+			const shiftY = menuRect.bottom - desktopRect.bottom + padding;
+			contextMenu.style.top = top - shiftY + 'px';
+		}
+	}
+	// hide context menu on resize/scroll to avoid misplaced menu
+	window.addEventListener('resize', hideContextMenu);
+	window.addEventListener('scroll', hideContextMenu, true);
+
 	desktop.addEventListener('contextmenu', (e) => {
 		e.preventDefault();
+		// do not show when auth overlay is visible
+		if (authOverlay && authOverlay.getAttribute('aria-hidden') === 'false') return;
+		showContextMenu(e.clientX, e.clientY);
 	});
 
 	// Auth flow
@@ -59,6 +106,8 @@
 					if (startUserBtn && data?.user?.username) {
 						startUserBtn.textContent = data.user.username;
 					}
+					// load desktop items for this user
+					loadDesktopItems();
 				} catch (_) {}
 			} else {
 				// not logged in
@@ -90,6 +139,122 @@
 		showLogin();
 	});
 
+	// Desktop shortcut creation
+	const createShortcutModal = document.getElementById('createShortcutModal');
+	const scName = document.getElementById('scName');
+	const scUrl = document.getElementById('scUrl');
+	const scCreateBtn = document.getElementById('scCreateBtn');
+	const scCancelBtn = document.getElementById('scCancelBtn');
+	const scError = document.getElementById('scError');
+	const desktopIcons = document.getElementById('desktopIcons');
+	const DEFAULT_ICON = '/icons/web.svg';
+
+	function openCreateShortcut() {
+		if (!createShortcutModal) return;
+		scError.textContent = '';
+		scName.value = '';
+		scUrl.value = '';
+		createShortcutModal.setAttribute('aria-hidden', 'false');
+	}
+	function closeCreateShortcut() {
+		if (!createShortcutModal) return;
+		createShortcutModal.setAttribute('aria-hidden', 'true');
+	}
+
+	// handler from context menu
+	const cmNewShortcut = document.getElementById('cm-new-shortcut');
+	if (cmNewShortcut) {
+		cmNewShortcut.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			openCreateShortcut();
+		});
+	}
+
+	// Create shortcut modal actions
+	if (scCancelBtn) {
+		scCancelBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			closeCreateShortcut();
+		});
+	}
+	if (scCreateBtn) {
+		scCreateBtn.addEventListener('click', async (e) => {
+			e.preventDefault();
+			scError.textContent = '';
+			const name = (scName.value || '').trim();
+			let urlv = (scUrl.value || '').trim();
+			if (!name || !urlv) {
+				scError.textContent = '请填写名称和网址';
+				return;
+			}
+			if (!/^https?:\/\//i.test(urlv)) urlv = 'https://' + urlv;
+			try {
+				const r = await fetch('/api/desktop-items', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON }),
+					credentials: 'include',
+				});
+				if (r.status === 200) {
+					closeCreateShortcut();
+					await loadDesktopItems();
+				} else {
+					const data = await r.json();
+					scError.textContent = data?.error || '创建失败';
+				}
+			} catch (e) {
+				scError.textContent = '网络错误';
+			}
+		});
+	}
+
+	function renderDesktopItems(items) {
+		if (!desktopIcons) return;
+		desktopIcons.innerHTML = '';
+		items.forEach((it) => {
+			const el = document.createElement('div');
+			el.className = 'desktop-icon';
+			el.dataset.id = it.id;
+			el.dataset.url = it.url;
+			el.innerHTML = `<img src="${it.icon || DEFAULT_ICON}" alt="icon"><div class="label">${escapeHtml(it.name)}</div>`;
+			el.addEventListener('click', (ev) => {
+				const url = el.dataset.url;
+				if (url) window.open(url, '_blank');
+			});
+			desktopIcons.appendChild(el);
+		});
+	}
+
+	function escapeHtml(str) {
+		return String(str).replace(
+			/[&<>"']/g,
+			(c) =>
+				({
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#39;',
+				}[c])
+		);
+	}
+
+	async function loadDesktopItems() {
+		try {
+			const r = await fetch('/api/desktop-items', { credentials: 'include' });
+			if (r.status === 200) {
+				const data = await r.json();
+				renderDesktopItems(data.items || []);
+			}
+		} catch (e) {
+			/* ignore */
+		}
+	}
+
+	// when logged in, load items
+	// modify checkSession earlier to call loadDesktopItems when successful
+
 	loginBtn.addEventListener('click', async (e) => {
 		e.preventDefault();
 		loginError.textContent = '';
@@ -108,6 +273,8 @@
 			});
 			if (r.status === 200) {
 				authOverlay.setAttribute('aria-hidden', 'true');
+				// load user desktop items after successful login
+				loadDesktopItems();
 			} else {
 				const data = await r.json();
 				loginError.textContent = data?.error || '登录失败';
