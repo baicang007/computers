@@ -1,8 +1,9 @@
 /* index.css - 仿 Windows 11 桌面样式 (半透明毛玻璃风格) */
 :root {
-	--desktop-width: 1920px;
-	--desktop-height: 1080px;
-	--taskbar-height: 56px;
+	/* 取消固定桌面尺寸，保留其他主题变量 */
+	/* --desktop-width: 1920px; */
+	/* --desktop-height: 1080px; */
+	--taskbar-height: 52px;
 	--glass-bg: rgba(255, 255, 255, 0.06);
 	--glass-border: rgba(255, 255, 255, 0.12);
 }
@@ -16,15 +17,16 @@ body {
 }
 
 .win-wrapper {
-	min-height: 100vh;
+	width: 100vw;
+	height: 100vh;
 	display: flex;
-	align-items: center;
+	align-items: stretch; /* 让 .win-desktop 高度随 wrapper 拉伸 */
 	justify-content: center;
 }
 
 .win-desktop {
-	width: var(--desktop-width);
-	height: var(--desktop-height);
+	width: 100%;
+	height: 100%;
 	position: relative;
 	overflow: hidden;
 	border-radius: 8px;
@@ -74,7 +76,8 @@ body {
 	transform: translateY(-1px);
 }
 .start-icon {
-	font-size: 18px;
+	width: 27px;
+	height: 27px;
 }
 .sr-only {
 	position: absolute;
@@ -125,21 +128,6 @@ body {
 }
 .start-user-btn:hover {
 	background: rgba(255, 255, 255, 0.04);
-}
-
-/* Add a subtle edge when desktop is smaller than viewport */
-@media (max-width: 1400px) {
-	.win-wrapper {
-		transform: scale(0.72);
-		transform-origin: center;
-	}
-}
-
-@media (max-width: 1024px) {
-	.win-wrapper {
-		transform: scale(0.5);
-		transform-origin: center;
-	}
 }
 
 /* Auth overlay */
