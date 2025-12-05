@@ -16,6 +16,12 @@ body {
 	background: #111;
 }
 
+button {
+	border: none;
+	cursor: pointer;
+	background: transparent;
+}
+
 .win-wrapper {
 	width: 100vw;
 	height: 100vh;
@@ -182,18 +188,15 @@ body {
 	margin-top: 12px;
 }
 .form-actions .link {
-	background: transparent;
-	border: none;
 	color: #aee3ff;
 	text-decoration: underline;
-	cursor: pointer;
 }
 .form-actions button {
 	padding: 8px 12px;
 	border-radius: 8px;
 	border: none;
 	cursor: pointer;
-	background: rgba(255, 255, 255, 0.05);
+	background: transparent;
 	color: #fff;
 }
 .auth-error {
