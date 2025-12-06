@@ -28,16 +28,53 @@
 		if (contextMenu && !contextMenu.contains(e.target)) {
 			hideContextMenu();
 		}
+		if (typeof iconContextMenu !== 'undefined' && iconContextMenu && !iconContextMenu.contains(e.target)) {
+			hideIconContextMenu();
+		}
 	});
 	// Close on Escape key
 	document.addEventListener('keydown', (e) => {
 		if (e.key === 'Escape') {
 			closeMenu();
 			hideContextMenu();
+			hideIconContextMenu();
 		}
 	});
 	// Custom desktop context menu
 	const contextMenu = document.getElementById('desktopContextMenu');
+	// Icon-specific context menu
+	const iconContextMenu = document.getElementById('iconContextMenu');
+	let currentIconTarget = null;
+
+	function hideIconContextMenu() {
+		if (!iconContextMenu) return;
+		iconContextMenu.setAttribute('aria-hidden', 'true');
+		iconContextMenu.style.left = '-9999px';
+		iconContextMenu.style.top = '-9999px';
+	}
+
+	function showIconContextMenu(x, y, targetEl) {
+		if (!iconContextMenu) return;
+		// hide desktop menu if open
+		hideContextMenu();
+		const desktopRect = desktop.getBoundingClientRect();
+		let left = x - desktopRect.left;
+		let top = y - desktopRect.top;
+		iconContextMenu.style.left = left + 'px';
+		iconContextMenu.style.top = top + 'px';
+		iconContextMenu.setAttribute('aria-hidden', 'false');
+		currentIconTarget = targetEl || null;
+		const menuRect = iconContextMenu.getBoundingClientRect();
+		const padding = 8;
+		if (menuRect.right > desktopRect.right) {
+			const shift = menuRect.right - desktopRect.right + padding;
+			iconContextMenu.style.left = left - shift + 'px';
+		}
+		if (menuRect.bottom > desktopRect.bottom) {
+			const shiftY = menuRect.bottom - desktopRect.bottom + padding;
+			iconContextMenu.style.top = top - shiftY + 'px';
+		}
+	}
 	function hideContextMenu() {
 		if (!contextMenu) return;
 		contextMenu.setAttribute('aria-hidden', 'true');
@@ -171,6 +208,37 @@
 		});
 	}
 
+	// handler for icon-specific context menu (删除)
+	const cmDelete = document.getElementById('cm-delete');
+	if (cmDelete) {
+		cmDelete.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			const id = currentIconTarget.dataset.id;
+			if (!id) return;
+			// Optimistically remove from DOM, then call API
+			const elToRemove = currentIconTarget;
+			elToRemove.remove();
+			currentIconTarget = null;
+			try {
+				const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
+					method: 'DELETE',
+					credentials: 'include',
+				});
+				if (r.status === 200) {
+					// success
+					return;
+				} else {
+					// failed — reload items to restore state
+					await loadDesktopItems();
+				}
+			} catch (err) {
+				await loadDesktopItems();
+			}
+		});
+	}
+
 	// Create shortcut modal actions
 	if (scCancelBtn) {
 		scCancelBtn.addEventListener('click', (e) => {
@@ -221,6 +289,14 @@
 			el.addEventListener('click', (ev) => {
 				const url = el.dataset.url;
 				if (url) window.open(url, '_blank');
+			});
+			// right-click on an icon shows icon-specific context menu
+			el.addEventListener('contextmenu', (ev) => {
+				ev.preventDefault();
+				ev.stopPropagation();
+				// do not show when auth overlay is visible
+				if (authOverlay && authOverlay.getAttribute('aria-hidden') === 'false') return;
+				showIconContextMenu(ev.clientX, ev.clientY, el);
 			});
 			desktopIcons.appendChild(el);
 		});

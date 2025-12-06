@@ -264,7 +264,7 @@ button {
 	margin: 1px;
 	border-radius: 10px;
 	padding: 0;
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.33));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.03));
 	backdrop-filter: blur(12px) saturate(1.1);
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
@@ -284,7 +284,7 @@ button {
 	left: auto;
 	right: 100%;
 	margin-left: 0;
-	margin-right: 8px;
+	margin-right: 1px;
 	transform: translateX(-6px) scale(0.99);
 }
 

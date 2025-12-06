@@ -161,6 +161,28 @@ export default {
 					return new Response(JSON.stringify({ error: 'invalid body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
 				}
 			}
+			// DELETE /api/desktop-items/:id - 删除某个桌面项（仅限拥有者）
+			if (request.method === 'DELETE' && url.pathname.startsWith('/api/desktop-items/')) {
+				await ensureTables(env.computers);
+				const user = await getUserFromRequest(request, env);
+				if (!user)
+					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				const parts = url.pathname.split('/').filter(Boolean);
+				const id = parts[parts.length - 1];
+				if (!id) {
+					return new Response(JSON.stringify({ error: 'missing id' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+				}
+				try {
+					const res = await env.computers.prepare(`DELETE FROM desktop_items WHERE id = ? AND user_id = ?`).bind(id, user.id).run();
+					// res.changes may be 0 if no row deleted
+					return new Response(JSON.stringify({ success: true, deleted: res.changes || 0 }), {
+						status: 200,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				} catch (e) {
+					return new Response(JSON.stringify({ error: 'delete failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+				}
+			}
 
 			// API: must check method
 			await ensureTables(env.computers);
