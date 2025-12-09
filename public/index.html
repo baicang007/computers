@@ -23,6 +23,10 @@
                     <img src="/icons/windows.png" class="start-icon" alt="" aria-hidden="true">
                     <span class="sr-only">Start</span>
                 </button>
+                <!-- 任务栏右侧：时钟 -->
+                <div class="taskbar-right" aria-hidden="false">
+                    <div class="taskbar-clock" id="taskbarClock" aria-live="polite">--:--</div>
+                </div>
             </div>
 
             <!-- Start menu -->
@@ -98,6 +102,7 @@
 
             <!-- Icon-specific context menu (右键图标时显示) -->
             <ul class="context-menu" id="iconContextMenu" role="menu" aria-hidden="true">
+                <li class="cm-item" role="menuitem" tabindex="-1" id="cm-open">打开</li>
                 <li class="cm-item" role="menuitem" tabindex="-1" id="cm-delete">删除</li>
             </ul>
 

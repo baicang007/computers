@@ -102,6 +102,12 @@ export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
 
+		// helper to build JSON responses with required security headers
+		function jsonResponse(obj, status = 200, extraHeaders = {}) {
+			const headers = new Headers(Object.assign({ 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' }, extraHeaders));
+			return new Response(JSON.stringify(obj), { status, headers });
+		}
+
 		// Serve static assets from the ASSETS binding when available
 		if (request.method === 'GET') {
 			try {
@@ -110,8 +116,12 @@ export default {
 				const assetRequest = new Request(new URL(pathname, request.url).toString(), request);
 				if (env.ASSETS) {
 					const r = await env.ASSETS.fetch(assetRequest);
-					// If asset found (200), return it
-					if (r.status !== 404) return r;
+					// If asset found (200), return it with security header
+					if (r.status !== 404) {
+						const headers = new Headers(r.headers);
+						headers.set('X-Content-Type-Options', 'nosniff');
+						return new Response(r.body, { status: r.status, statusText: r.statusText, headers });
+					}
 				}
 			} catch (e) {
 				// Fall through to other handlers
@@ -123,64 +133,48 @@ export default {
 			// Desktop items endpoints
 			if (url.pathname === '/api/desktop-items' && request.method === 'GET') {
 				const user = await getUserFromRequest(request, env);
-				if (!user)
-					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
 				const rows = await env.computers
 					.prepare(`SELECT id, name, url, icon, created_at FROM desktop_items WHERE user_id = ? ORDER BY created_at ASC`)
 					.bind(user.id)
 					.all();
-				return new Response(JSON.stringify({ items: rows.results || [] }), {
-					status: 200,
-					headers: { 'Content-Type': 'application/json' },
-				});
+				return jsonResponse({ items: rows.results || [] }, 200);
 			}
 			if (url.pathname === '/api/desktop-items' && request.method === 'POST') {
 				const user = await getUserFromRequest(request, env);
-				if (!user)
-					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
 				try {
 					const body = await request.json();
 					const name = String(body.name || '').trim();
 					const urlv = String(body.url || '').trim();
 					const icon = String(body.icon || '/icons/web.svg');
-					if (!name || !urlv)
-						return new Response(JSON.stringify({ error: 'Missing fields' }), {
-							status: 400,
-							headers: { 'Content-Type': 'application/json' },
-						});
+					if (!name || !urlv) return jsonResponse({ error: 'Missing fields' }, 400);
 					const res = await env.computers
 						.prepare(`INSERT INTO desktop_items (user_id,name,url,icon) VALUES (?,?,?,?)`)
 						.bind(user.id, name, urlv, icon)
 						.run();
 					// return the created item id
-					return new Response(JSON.stringify({ success: true, id: res.lastRowId || null }), {
-						status: 200,
-						headers: { 'Content-Type': 'application/json' },
-					});
+					return jsonResponse({ success: true, id: res.lastRowId || null }, 200);
 				} catch (e) {
-					return new Response(JSON.stringify({ error: 'invalid body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+					return jsonResponse({ error: 'invalid body' }, 400);
 				}
 			}
 			// DELETE /api/desktop-items/:id - 删除某个桌面项（仅限拥有者）
 			if (request.method === 'DELETE' && url.pathname.startsWith('/api/desktop-items/')) {
 				await ensureTables(env.computers);
 				const user = await getUserFromRequest(request, env);
-				if (!user)
-					return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
 				const parts = url.pathname.split('/').filter(Boolean);
 				const id = parts[parts.length - 1];
 				if (!id) {
-					return new Response(JSON.stringify({ error: 'missing id' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+					return jsonResponse({ error: 'missing id' }, 400);
 				}
 				try {
 					const res = await env.computers.prepare(`DELETE FROM desktop_items WHERE id = ? AND user_id = ?`).bind(id, user.id).run();
 					// res.changes may be 0 if no row deleted
-					return new Response(JSON.stringify({ success: true, deleted: res.changes || 0 }), {
-						status: 200,
-						headers: { 'Content-Type': 'application/json' },
-					});
+					return jsonResponse({ success: true, deleted: res.changes || 0 }, 200);
 				} catch (e) {
-					return new Response(JSON.stringify({ error: 'delete failed' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+					return jsonResponse({ error: 'delete failed' }, 500);
 				}
 			}
 
@@ -192,11 +186,7 @@ export default {
 					const username = String(body.username || '').trim();
 					const email = String(body.email || '').trim();
 					const password = String(body.password || '');
-					if (!username || !email || !password)
-						return new Response(JSON.stringify({ error: 'Missing fields' }), {
-							status: 400,
-							headers: { 'Content-Type': 'application/json' },
-						});
+					if (!username || !email || !password) return jsonResponse({ error: 'Missing fields' }, 400);
 					const password_hash = await hashPassword(password);
 					// insert into users
 					try {
@@ -204,15 +194,12 @@ export default {
 							.prepare(`INSERT INTO users (username,email,password_hash) VALUES (?,?,?)`)
 							.bind(username, email, password_hash)
 							.run();
-						return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+						return jsonResponse({ success: true }, 200);
 					} catch (e) {
-						return new Response(JSON.stringify({ error: '用户名或邮箱已存在' }), {
-							status: 400,
-							headers: { 'Content-Type': 'application/json' },
-						});
+						return jsonResponse({ error: '用户名或邮箱已存在' }, 400);
 					}
 				} catch (e) {
-					return new Response(JSON.stringify({ error: 'invalid body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+					return jsonResponse({ error: 'invalid body' }, 400);
 				}
 			}
 			if (url.pathname === '/api/login' && request.method === 'POST') {
@@ -220,24 +207,12 @@ export default {
 					const body = await request.json();
 					const username = String(body.username || '').trim();
 					const password = String(body.password || '');
-					if (!username || !password)
-						return new Response(JSON.stringify({ error: 'Missing fields' }), {
-							status: 400,
-							headers: { 'Content-Type': 'application/json' },
-						});
+					if (!username || !password) return jsonResponse({ error: 'Missing fields' }, 400);
 					const rows = await env.computers.prepare(`SELECT * FROM users WHERE username = ?`).bind(username).all();
 					const user = rows.results && rows.results[0];
-					if (!user)
-						return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
-							status: 401,
-							headers: { 'Content-Type': 'application/json' },
-						});
+					if (!user) return jsonResponse({ error: '用户名或密码错误' }, 401);
 					const hash = await hashPassword(password);
-					if (hash !== user.password_hash)
-						return new Response(JSON.stringify({ error: '用户名或密码错误' }), {
-							status: 401,
-							headers: { 'Content-Type': 'application/json' },
-						});
+					if (hash !== user.password_hash) return jsonResponse({ error: '用户名或密码错误' }, 401);
 					// create session
 					const token = generateToken();
 					await env.computers
@@ -250,9 +225,10 @@ export default {
 						'Set-Cookie',
 						cookieString('session', token, { Path: '/', HttpOnly: true, Secure: false, SameSite: 'Lax', 'Max-Age': 7 * 24 * 3600 })
 					);
+					headers.set('X-Content-Type-Options', 'nosniff');
 					return new Response(JSON.stringify({ success: true }), { status: 200, headers });
 				} catch (e) {
-					return new Response(JSON.stringify({ error: 'invalid body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+					return jsonResponse({ error: 'invalid body' }, 400);
 				}
 			}
 			if (url.pathname === '/api/session' && request.method === 'GET') {
@@ -261,11 +237,9 @@ export default {
 					.split(';')
 					.map((s) => s.trim())
 					.find((s) => s.startsWith('session='));
-				if (!match)
-					return new Response(JSON.stringify({ authenticated: false }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				if (!match) return jsonResponse({ authenticated: false }, 401);
 				const token = match.split('=')[1];
-				if (!token)
-					return new Response(JSON.stringify({ authenticated: false }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+				if (!token) return jsonResponse({ authenticated: false }, 401);
 				const rows = await env.computers
 					.prepare(
 						`SELECT users.id, users.username, users.email FROM sessions JOIN users ON sessions.user_id = users.id WHERE sessions.token = ? AND sessions.expires_at > datetime('now')`
@@ -273,12 +247,8 @@ export default {
 					.bind(token)
 					.all();
 				const user = rows.results && rows.results[0];
-				if (!user)
-					return new Response(JSON.stringify({ authenticated: false }), { status: 401, headers: { 'Content-Type': 'application/json' } });
-				return new Response(JSON.stringify({ authenticated: true, user: { id: user.id, username: user.username, email: user.email } }), {
-					status: 200,
-					headers: { 'Content-Type': 'application/json' },
-				});
+				if (!user) return jsonResponse({ authenticated: false }, 401);
+				return jsonResponse({ authenticated: true, user: { id: user.id, username: user.username, email: user.email } }, 200);
 			}
 			if (url.pathname === '/api/logout' && request.method === 'POST') {
 				// invalidate session cookie
@@ -298,12 +268,14 @@ export default {
 					'Set-Cookie',
 					cookieString('session', '', { Path: '/', HttpOnly: true, Secure: false, SameSite: 'Lax', 'Max-Age': 0 })
 				);
+				headers.set('X-Content-Type-Options', 'nosniff');
 				return new Response(JSON.stringify({ success: true }), { status: 200, headers });
 			}
-			return new Response(JSON.stringify({ error: 'Not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+			return jsonResponse({ error: 'Not found' }, 404);
 		}
 
 		// Fallback for other routes
-		return new Response('Not found', { status: 404 });
+		const fallbackHeaders = new Headers({ 'Content-Type': 'text/plain', 'X-Content-Type-Options': 'nosniff' });
+		return new Response('Not found', { status: 404, headers: fallbackHeaders });
 	},
 };

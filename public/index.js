@@ -208,6 +208,20 @@
 		});
 	}
 
+	// handler for icon-specific context menu: 打开
+	const cmOpen = document.getElementById('cm-open');
+	if (cmOpen) {
+		cmOpen.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			const url = currentIconTarget.dataset.url;
+			if (!url) return;
+			// simulate clicking the icon: open url in new tab/window
+			window.open(url, '_blank');
+		});
+	}
+
 	// handler for icon-specific context menu (删除)
 	const cmDelete = document.getElementById('cm-delete');
 	if (cmDelete) {
@@ -276,6 +290,42 @@
 			}
 		});
 	}
+
+	// Taskbar clock
+	const taskbarClockEl = document.getElementById('taskbarClock');
+
+	function formatTime(date) {
+		// Return localized time without seconds for a cleaner look, include seconds when desired
+		try {
+			return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		} catch (e) {
+			// fallback
+			const h = String(date.getHours()).padStart(2, '0');
+			const m = String(date.getMinutes()).padStart(2, '0');
+			return `${h}:${m}`;
+		}
+	}
+
+	function updateClock() {
+		if (!taskbarClockEl) return;
+		const now = new Date();
+		taskbarClockEl.textContent = formatTime(now);
+	}
+
+	// update immediately and then every 30s (minute precision) but also update on focus
+	updateClock();
+	let clockInterval = setInterval(updateClock, 30 * 1000);
+
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') {
+			updateClock();
+		}
+	});
+
+	// ensure interval cleared on unload (cleanup)
+	window.addEventListener('beforeunload', () => {
+		clearInterval(clockInterval);
+	});
 
 	function renderDesktopItems(items) {
 		if (!desktopIcons) return;

@@ -59,9 +59,30 @@ button {
 	padding: 0 12px;
 	gap: 12px;
 	box-sizing: border-box;
+	-webkit-backdrop-filter: blur(10) saturate(1.2);
 	backdrop-filter: blur(10px) saturate(1.2);
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
 	border-top: 1px solid var(--glass-border);
+}
+
+.taskbar-right {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.taskbar-clock {
+	color: #fff;
+	font-size: 13px;
+	padding: 6px 10px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.02);
+	-webkit-backdrop-filter: blur(6);
+	backdrop-filter: blur(6px);
+	min-width: 58px;
+	text-align: center;
+	cursor: default;
 }
 
 .start-button {
@@ -105,6 +126,7 @@ button {
 	flex-direction: column;
 	gap: 8px;
 	box-sizing: border-box;
+	-webkit-backdrop-filter: blur(16px) saturate(1.1);
 	backdrop-filter: blur(16px) saturate(1.1);
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
 	border: 1px solid rgba(255, 255, 255, 0.08);
@@ -156,6 +178,7 @@ button {
 	padding: 20px;
 	border-radius: 14px;
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+	-webkit-backdrop-filter: blur(12px) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
 	border: 1px solid rgba(255, 255, 255, 0.08);
 	box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
@@ -221,6 +244,7 @@ button {
 	border-radius: 10px;
 	padding: 0;
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.02));
+	-webkit-backdrop-filter: blur(12px) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
@@ -265,6 +289,7 @@ button {
 	border-radius: 10px;
 	padding: 0;
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.03));
+	-webkit-backdrop-filter: blur(12) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
@@ -344,6 +369,7 @@ button {
 	padding: 18px;
 	border-radius: 12px;
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+	-webkit-backdrop-filter: blur(12) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
 	border: 1px solid rgba(255, 255, 255, 0.06);
 	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
