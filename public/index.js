@@ -112,12 +112,49 @@
 	window.addEventListener('resize', hideContextMenu);
 	window.addEventListener('scroll', hideContextMenu, true);
 
+	// Only show desktop context menu when right-clicking on the desktop surface
+	function isDesktopSurface(target) {
+		if (!desktop || !target) return false;
+		// If the click is inside any UI element that is not the desktop surface, ignore
+		// Exclude taskbar, start menu, auth overlays, modals, existing context menus, desktop icons
+		const forbidden = target.closest(
+			'.taskbar, #startMenu, #authOverlay, #createShortcutModal, .context-menu, .desktop-icon, .shortcut-modal'
+		);
+		if (forbidden) return false;
+		// Otherwise, ensure the clicked element is inside the desktop container
+		return Boolean(target.closest('#desktop'));
+	}
+
 	desktop.addEventListener('contextmenu', (e) => {
+		// If the event target is not part of the desktop surface (e.g., taskbar, start menu), do nothing
+		if (!isDesktopSurface(e.target)) return;
 		e.preventDefault();
 		// do not show when auth overlay is visible
 		if (authOverlay && authOverlay.getAttribute('aria-hidden') === 'false') return;
 		showContextMenu(e.clientX, e.clientY);
 	});
+
+	// Prevent contextmenu events on known child UI elements from bubbling to `desktop`
+	const taskbarEl = document.querySelector('.taskbar');
+	if (taskbarEl)
+		taskbarEl.addEventListener('contextmenu', (e) => {
+			e.stopPropagation();
+		});
+	const startMenuEl = document.getElementById('startMenu');
+	if (startMenuEl)
+		startMenuEl.addEventListener('contextmenu', (e) => {
+			e.stopPropagation();
+		});
+	const createShortcutModalEl = document.getElementById('createShortcutModal');
+	if (createShortcutModalEl)
+		createShortcutModalEl.addEventListener('contextmenu', (e) => {
+			e.stopPropagation();
+		});
+	const authOverlayEl = document.getElementById('authOverlay');
+	if (authOverlayEl)
+		authOverlayEl.addEventListener('contextmenu', (e) => {
+			e.stopPropagation();
+		});
 
 	// Auth flow
 	const authOverlay = document.getElementById('authOverlay');
