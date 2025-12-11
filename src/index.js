@@ -47,6 +47,10 @@ async function ensureDesktopItemsTable(db) {
 		name TEXT,
 		url TEXT,
 		icon TEXT,
+		width INTEGER DEFAULT 72,
+		height INTEGER DEFAULT 72,
+		pos_x INTEGER DEFAULT 12,
+		pos_y INTEGER DEFAULT 12,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY(user_id) REFERENCES users(id)
 	)`;
@@ -130,12 +134,15 @@ export default {
 
 		// API handlers
 		if (url.pathname.startsWith('/api')) {
+			await ensureTables(env.computers);
 			// Desktop items endpoints
 			if (url.pathname === '/api/desktop-items' && request.method === 'GET') {
 				const user = await getUserFromRequest(request, env);
 				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
 				const rows = await env.computers
-					.prepare(`SELECT id, name, url, icon, created_at FROM desktop_items WHERE user_id = ? ORDER BY created_at ASC`)
+					.prepare(
+						`SELECT id, name, url, icon, width, height, pos_x, pos_y, created_at FROM desktop_items WHERE user_id = ? ORDER BY created_at ASC`
+					)
 					.bind(user.id)
 					.all();
 				return jsonResponse({ items: rows.results || [] }, 200);
@@ -148,13 +155,69 @@ export default {
 					const name = String(body.name || '').trim();
 					const urlv = String(body.url || '').trim();
 					const icon = String(body.icon || '/icons/web.svg');
+					const width = Number.isFinite(Number(body.width)) ? parseInt(body.width, 10) : 72;
+					const height = Number.isFinite(Number(body.height)) ? parseInt(body.height, 10) : 92;
+					const pos_x = Number.isFinite(Number(body.pos_x)) ? parseInt(body.pos_x, 10) : 12;
+					const pos_y = Number.isFinite(Number(body.pos_y)) ? parseInt(body.pos_y, 10) : 12;
 					if (!name || !urlv) return jsonResponse({ error: 'Missing fields' }, 400);
 					const res = await env.computers
-						.prepare(`INSERT INTO desktop_items (user_id,name,url,icon) VALUES (?,?,?,?)`)
-						.bind(user.id, name, urlv, icon)
+						.prepare(`INSERT INTO desktop_items (user_id,name,url,icon,width,height,pos_x,pos_y) VALUES (?,?,?,?,?,?,?,?)`)
+						.bind(user.id, name, urlv, icon, width, height, pos_x, pos_y)
 						.run();
 					// return the created item id
 					return jsonResponse({ success: true, id: res.lastRowId || null }, 200);
+				} catch (e) {
+					return jsonResponse({ error: 'invalid body' }, 400);
+				}
+			}
+			// PATCH /api/desktop-items/:id - update position/size (owner only)
+			if (request.method === 'PATCH' && url.pathname.startsWith('/api/desktop-items/')) {
+				const user = await getUserFromRequest(request, env);
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
+				const parts = url.pathname.split('/').filter(Boolean);
+				const id = parts[parts.length - 1];
+				if (!id) return jsonResponse({ error: 'missing id' }, 400);
+				try {
+					const body = await request.json();
+					const fields = [];
+					const params = [];
+					if (Object.prototype.hasOwnProperty.call(body, 'pos_x')) {
+						const v = parseInt(body.pos_x, 10);
+						if (!Number.isNaN(v)) {
+							fields.push('pos_x = ?');
+							params.push(v);
+						}
+					}
+					if (Object.prototype.hasOwnProperty.call(body, 'pos_y')) {
+						const v = parseInt(body.pos_y, 10);
+						if (!Number.isNaN(v)) {
+							fields.push('pos_y = ?');
+							params.push(v);
+						}
+					}
+					if (Object.prototype.hasOwnProperty.call(body, 'width')) {
+						const v = parseInt(body.width, 10);
+						if (!Number.isNaN(v)) {
+							fields.push('width = ?');
+							params.push(v);
+						}
+					}
+					if (Object.prototype.hasOwnProperty.call(body, 'height')) {
+						const v = parseInt(body.height, 10);
+						if (!Number.isNaN(v)) {
+							fields.push('height = ?');
+							params.push(v);
+						}
+					}
+					if (fields.length === 0) return jsonResponse({ error: 'no fields' }, 400);
+					params.push(id);
+					params.push(user.id);
+					const sql = `UPDATE desktop_items SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`;
+					const res = await env.computers
+						.prepare(sql)
+						.bind(...params)
+						.run();
+					return jsonResponse({ success: true, changes: res.changes || 0 }, 200);
 				} catch (e) {
 					return jsonResponse({ error: 'invalid body' }, 400);
 				}

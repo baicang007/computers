@@ -339,6 +339,14 @@ button {
 	text-align: center;
 	cursor: pointer;
 }
+.desktop-icon.dragging {
+	opacity: 0.95;
+	z-index: 2000;
+	cursor: grabbing;
+}
+.desktop-icon {
+	touch-action: none;
+}
 .desktop-icon img {
 	width: 48px;
 	height: 48px;

@@ -309,10 +309,21 @@
 			}
 			if (!/^https?:\/\//i.test(urlv)) urlv = 'https://' + urlv;
 			try {
+				// compute a default position based on current icons count (grid)
+				const count = desktopIcons ? desktopIcons.children.length : 0;
+				const cols = 6; // icons per column
+				const col = count % cols;
+				const row = Math.floor(count / cols);
+				const gapX = 24; // horizontal gap
+				const gapY = 12; // vertical gap
+				const defaultWidth = 72;
+				const defaultHeight = 92;
+				const pos_x = 12 + col * (defaultWidth + gapX);
+				const pos_y = 12 + row * (defaultHeight + gapY);
 				const r = await fetch('/api/desktop-items', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON }),
+					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON, width: defaultWidth, height: defaultHeight, pos_x, pos_y }),
 					credentials: 'include',
 				});
 				if (r.status === 200) {
@@ -373,9 +384,111 @@
 			el.dataset.id = it.id;
 			el.dataset.url = it.url;
 			el.innerHTML = `<img src="${it.icon || DEFAULT_ICON}" alt="icon"><div class="label">${escapeHtml(it.name)}</div>`;
+			// apply saved size and position if present
+			const width = parseInt(it.width || 72, 10);
+			const height = parseInt(it.height || 72, 10);
+			const posX = parseInt(it.pos_x || it.posX || 12, 10);
+			const posY = parseInt(it.pos_y || it.posY || 12, 10);
+			el.style.position = 'absolute';
+			el.style.left = posX + 'px';
+			el.style.top = posY + 'px';
+			el.style.width = width + 'px';
+			// set height for container (approx)
+			el.style.height = height + 'px';
+			// adjust inner image and label widths
+			// image sizing: keep within container
+			setTimeout(() => {
+				const img = el.querySelector('img');
+				const label = el.querySelector('.label');
+				if (img) {
+					const imgSize = Math.max(24, Math.min(56, Math.floor(width * 0.6)));
+					img.style.width = imgSize + 'px';
+					img.style.height = imgSize + 'px';
+				}
+				if (label) {
+					label.style.width = width + 'px';
+				}
+			}, 0);
+			// click opens unless the user just dragged the icon
 			el.addEventListener('click', (ev) => {
+				if (el._wasDragging) {
+					el._wasDragging = false;
+					return;
+				}
 				const url = el.dataset.url;
 				if (url) window.open(url, '_blank');
+			});
+
+			// drag support: left-button drag to reposition icons
+			let isPointerDown = false;
+			let isDragging = false;
+			let startX = 0,
+				startY = 0;
+			let startLeft = 0,
+				startTop = 0;
+			function onPointerMove(e) {
+				if (!isPointerDown) return;
+				const clientX = e.clientX ?? (e.touches && e.touches[0] && e.touches[0].clientX);
+				const clientY = e.clientY ?? (e.touches && e.touches[0] && e.touches[0].clientY);
+				if (clientX == null || clientY == null) return;
+				const dx = clientX - startX;
+				const dy = clientY - startY;
+				if (!isDragging && Math.hypot(dx, dy) > 4) {
+					isDragging = true;
+					el.classList.add('dragging');
+				}
+				if (isDragging) {
+					const newLeft = Math.max(0, startLeft + dx);
+					const newTop = Math.max(0, startTop + dy);
+					el.style.left = newLeft + 'px';
+					el.style.top = newTop + 'px';
+				}
+			}
+
+			async function onPointerUp(e) {
+				document.removeEventListener('mousemove', onPointerMove);
+				document.removeEventListener('mouseup', onPointerUp);
+				document.removeEventListener('touchmove', onPointerMove);
+				document.removeEventListener('touchend', onPointerUp);
+				if (isDragging) {
+					isDragging = false;
+					el.classList.remove('dragging');
+					el._wasDragging = true;
+					// persist position to server
+					const id = el.dataset.id;
+					const left = parseInt(el.style.left || '0', 10) || 0;
+					const top = parseInt(el.style.top || '0', 10) || 0;
+					try {
+						await saveIconPosition(id, left, top);
+					} catch (err) {
+						// on error, reload items to restore canonical positions
+						loadDesktopItems();
+					}
+				}
+				isPointerDown = false;
+			}
+
+			el.addEventListener('mousedown', (e) => {
+				if (e.button !== 0) return; // only left button
+				e.preventDefault();
+				isPointerDown = true;
+				startX = e.clientX;
+				startY = e.clientY;
+				startLeft = parseInt(el.style.left || '0', 10) || 0;
+				startTop = parseInt(el.style.top || '0', 10) || 0;
+				document.addEventListener('mousemove', onPointerMove);
+				document.addEventListener('mouseup', onPointerUp);
+			});
+			// touch support
+			el.addEventListener('touchstart', (e) => {
+				if (!e.touches || e.touches.length !== 1) return;
+				isPointerDown = true;
+				startX = e.touches[0].clientX;
+				startY = e.touches[0].clientY;
+				startLeft = parseInt(el.style.left || '0', 10) || 0;
+				startTop = parseInt(el.style.top || '0', 10) || 0;
+				document.addEventListener('touchmove', onPointerMove, { passive: false });
+				document.addEventListener('touchend', onPointerUp);
 			});
 			// right-click on an icon shows icon-specific context menu
 			el.addEventListener('contextmenu', (ev) => {
@@ -413,6 +526,20 @@
 		} catch (e) {
 			/* ignore */
 		}
+	}
+
+	// save icon position/size to backend
+	async function saveIconPosition(id, pos_x, pos_y, width, height) {
+		if (!id) return;
+		const body = { pos_x: parseInt(pos_x, 10) || 0, pos_y: parseInt(pos_y, 10) || 0 };
+		if (typeof width !== 'undefined') body.width = parseInt(width, 10) || 0;
+		if (typeof height !== 'undefined') body.height = parseInt(height, 10) || 0;
+		await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+			credentials: 'include',
+		});
 	}
 
 	// when logged in, load items
