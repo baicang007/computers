@@ -259,6 +259,54 @@
 		});
 	}
 
+	// size submenu handlers
+	const cmSizeLarge = document.getElementById('cm-size-large');
+	const cmSizeMedium = document.getElementById('cm-size-medium');
+	const cmSizeSmall = document.getElementById('cm-size-small');
+
+	async function handleSizeChange(size) {
+		hideIconContextMenu();
+		if (!currentIconTarget) return;
+		const el = currentIconTarget;
+		// compute container and image sizes
+		const imgSize = parseInt(size, 10);
+		const containerWidth = imgSize;
+		const containerHeight = imgSize + 22; // allow space for label
+		el.style.width = containerWidth + 'px';
+		el.style.height = containerHeight + 'px';
+		const img = el.querySelector('img');
+		const label = el.querySelector('.label');
+		if (img) {
+			img.style.width = imgSize + 'px';
+			img.style.height = imgSize + 'px';
+		}
+		if (label) label.style.width = containerWidth + 'px';
+		// persist to server (width/height fields will store image size)
+		const id = el.dataset.id;
+		try {
+			await saveIconPosition(id, parseInt(el.style.left || '0', 10) || 0, parseInt(el.style.top || '0', 10) || 0, imgSize, imgSize);
+		} catch (e) {
+			// failed to save; reload to keep consistency
+			loadDesktopItems();
+		}
+	}
+
+	if (cmSizeLarge)
+		cmSizeLarge.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(96);
+		});
+	if (cmSizeMedium)
+		cmSizeMedium.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(72);
+		});
+	if (cmSizeSmall)
+		cmSizeSmall.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(48);
+		});
+
 	// handler for icon-specific context menu (删除)
 	const cmDelete = document.getElementById('cm-delete');
 	if (cmDelete) {
@@ -385,29 +433,29 @@
 			el.dataset.url = it.url;
 			el.innerHTML = `<img src="${it.icon || DEFAULT_ICON}" alt="icon"><div class="label">${escapeHtml(it.name)}</div>`;
 			// apply saved size and position if present
-			const width = parseInt(it.width || 72, 10);
-			const height = parseInt(it.height || 72, 10);
+			const storedWidth = parseInt(it.width || it.iconWidth || 0, 10) || 0;
+			const storedHeight = parseInt(it.height || it.iconHeight || 0, 10) || 0;
 			const posX = parseInt(it.pos_x || it.posX || 12, 10);
 			const posY = parseInt(it.pos_y || it.posY || 12, 10);
 			el.style.position = 'absolute';
 			el.style.left = posX + 'px';
 			el.style.top = posY + 'px';
-			el.style.width = width + 'px';
-			// set height for container (approx)
-			el.style.height = height + 'px';
-			// adjust inner image and label widths
-			// image sizing: keep within container
+			// Interpret stored width/height as image size when reasonable
+			let imgSize = 48;
+			if (storedWidth >= 24 && storedWidth <= 256) imgSize = storedWidth;
+			else if (storedHeight >= 24 && storedHeight <= 256) imgSize = storedHeight;
+			const containerWidth = Math.max(72, imgSize);
+			const containerHeight = imgSize + 22; // room for label
+			el.style.width = containerWidth + 'px';
+			el.style.height = containerHeight + 'px';
 			setTimeout(() => {
 				const img = el.querySelector('img');
 				const label = el.querySelector('.label');
 				if (img) {
-					const imgSize = Math.max(24, Math.min(56, Math.floor(width * 0.6)));
 					img.style.width = imgSize + 'px';
 					img.style.height = imgSize + 'px';
 				}
-				if (label) {
-					label.style.width = width + 'px';
-				}
+				if (label) label.style.width = containerWidth + 'px';
 			}, 0);
 			// click opens unless the user just dragged the icon
 			el.addEventListener('click', (ev) => {
