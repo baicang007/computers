@@ -63,6 +63,47 @@ async function ensureTables(db) {
 	await ensureDesktopItemsTable(db);
 }
 
+function arrayBufferToBase64(buffer) {
+	let binary = '';
+	const bytes = new Uint8Array(buffer);
+	const chunkSize = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunkSize) {
+		const slice = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+		binary += String.fromCharCode.apply(null, slice);
+	}
+	return btoa(binary);
+}
+
+async function fetchImageAsDataUri(urlOrPath, request, env) {
+	if (!urlOrPath) return urlOrPath;
+	// if it's already a data URI, return as-is
+	if (String(urlOrPath).startsWith('data:')) return urlOrPath;
+	try {
+		const target = new URL(urlOrPath, request.url).toString();
+		let res;
+		if (env && env.ASSETS) {
+			// try ASSETS first (static binding)
+			try {
+				res = await env.ASSETS.fetch(new Request(target, request));
+				if (res && res.status === 404) {
+					res = await fetch(target);
+				}
+			} catch (e) {
+				res = await fetch(target);
+			}
+		} else {
+			res = await fetch(target);
+		}
+		if (!res || !res.ok) return urlOrPath;
+		const contentType = res.headers.get('Content-Type') || 'application/octet-stream';
+		const buf = await res.arrayBuffer();
+		const b64 = arrayBufferToBase64(buf);
+		return `data:${contentType};base64,${b64}`;
+	} catch (e) {
+		return urlOrPath;
+	}
+}
+
 // helper: resolve user from request via session cookie
 async function getUserFromRequest(request, env) {
 	const cookie = request.headers.get('Cookie') || '';
@@ -154,7 +195,13 @@ export default {
 					const body = await request.json();
 					const name = String(body.name || '').trim();
 					const urlv = String(body.url || '').trim();
-					const icon = String(body.icon || '/icons/web.svg');
+					let icon = String(body.icon || '/icons/web.svg');
+					// convert icon URL to base64 data URI before storing (if not already data:)
+					try {
+						icon = await fetchImageAsDataUri(icon, request, env);
+					} catch (_) {
+						// fallback: keep original icon value
+					}
 					const width = Number.isFinite(Number(body.width)) ? parseInt(body.width, 10) : 72;
 					const height = Number.isFinite(Number(body.height)) ? parseInt(body.height, 10) : 92;
 					const pos_x = Number.isFinite(Number(body.pos_x)) ? parseInt(body.pos_x, 10) : 12;
@@ -181,6 +228,14 @@ export default {
 					const body = await request.json();
 					const fields = [];
 					const params = [];
+					// allow updating icon (data URI) as well
+					if (Object.prototype.hasOwnProperty.call(body, 'icon')) {
+						const v = String(body.icon || '').trim();
+						if (v) {
+							fields.push('icon = ?');
+							params.push(v);
+						}
+					}
 					if (Object.prototype.hasOwnProperty.call(body, 'pos_x')) {
 						const v = parseInt(body.pos_x, 10);
 						if (!Number.isNaN(v)) {

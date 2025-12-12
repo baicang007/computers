@@ -259,6 +259,62 @@
 		});
 	}
 
+	// handler for icon-specific context menu: 更换 图标
+	const cmChange = document.getElementById('cm-change');
+	if (cmChange) {
+		cmChange.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			// create hidden file input
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = 'image/*';
+			input.style.display = 'none';
+			document.body.appendChild(input);
+			input.addEventListener('change', async () => {
+				const file = input.files && input.files[0];
+				document.body.removeChild(input);
+				if (!file) return;
+				const maxBytes = 100 * 1024; // 100KB
+				if (file.size > maxBytes) {
+					alert('请选择小于100KB的图片');
+					return;
+				}
+				// read as data URL
+				const reader = new FileReader();
+				reader.onload = async () => {
+					const dataUrl = String(reader.result || '');
+					if (!dataUrl) return;
+					const id = currentIconTarget.dataset.id;
+					if (!id) return;
+					try {
+						const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
+							method: 'PATCH',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ icon: dataUrl }),
+							credentials: 'include',
+						});
+						if (r.status === 200) {
+							// update DOM immediately
+							const img = currentIconTarget.querySelector('img');
+							if (img) img.src = dataUrl;
+						} else {
+							alert('上传失败');
+							loadDesktopItems();
+						}
+					} catch (err) {
+						alert('上传失败');
+						loadDesktopItems();
+					}
+				};
+				reader.readAsDataURL(file);
+			});
+			// open dialog
+			input.click();
+		});
+	}
+
 	// size submenu handlers
 	const cmSizeLarge = document.getElementById('cm-size-large');
 	const cmSizeMedium = document.getElementById('cm-size-medium');
