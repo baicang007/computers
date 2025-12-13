@@ -221,7 +221,7 @@
 	const scCancelBtn = document.getElementById('scCancelBtn');
 	const scError = document.getElementById('scError');
 	const desktopIcons = document.getElementById('desktopIcons');
-	const DEFAULT_ICON = '/icons/webhint.png';
+	const DEFAULT_ICON = '/icons/website.png';
 
 	function openCreateShortcut() {
 		if (!createShortcutModal) return;
