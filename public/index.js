@@ -649,6 +649,49 @@
 	// when logged in, load items
 	// modify checkSession earlier to call loadDesktopItems when successful
 
+	// 自动排列桌面图标 - 正确移到外部作用域
+	async function autoArrangeIcons() {
+		if (!desktopIcons) return;
+
+		const icons = Array.from(desktopIcons.children);
+		if (icons.length === 0) return;
+
+		// 计算网格参数
+		const cols = 6; // 每行显示的图标数量
+		const gapX = 24; // 图标之间的水平间距
+		const gapY = 12; // 图标之间的垂直间距
+		const startX = 12; // 起始X坐标
+		const startY = 12; // 起始Y坐标
+		const defaultWidth = 96; // 默认图标宽度
+		const defaultHeight = 116; // 默认图标高度
+
+		// 遍历所有图标，重新计算位置
+		for (let i = 0; i < icons.length; i++) {
+			const icon = icons[i];
+			const col = i % cols;
+			const row = Math.floor(i / cols);
+
+			// 计算新位置
+			const newX = startX + col * (defaultWidth + gapX);
+			const newY = startY + row * (defaultHeight + gapY);
+
+			// 更新DOM位置
+			icon.style.left = newX + 'px';
+			icon.style.top = newY + 'px';
+
+			// 保存新位置到服务器
+			const id = icon.dataset.id;
+			if (id) {
+				try {
+					await saveIconPosition(id, newX, newY);
+				} catch (e) {
+					console.error('保存图标位置失败:', e);
+				}
+			}
+		}
+	}
+
+	// 登录按钮事件监听器（只保留一个）
 	loginBtn.addEventListener('click', async (e) => {
 		e.preventDefault();
 		loginError.textContent = '';
@@ -677,6 +720,16 @@
 			loginError.textContent = '网络错误';
 		}
 	});
+
+	// 自动排列图标菜单项事件监听器
+	const cmAutoArrange = document.getElementById('cm-auto-arrange');
+	if (cmAutoArrange) {
+		cmAutoArrange.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			await autoArrangeIcons();
+		});
+	}
 
 	registerBtn.addEventListener('click', async (e) => {
 		e.preventDefault();
