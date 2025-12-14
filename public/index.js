@@ -299,19 +299,40 @@
 							// update DOM immediately
 							const img = currentIconTarget.querySelector('img');
 							if (img) img.src = dataUrl;
-						} else {
-							alert('上传失败');
-							loadDesktopItems();
 						}
 					} catch (err) {
-						alert('上传失败');
-						loadDesktopItems();
+						console.error('Failed to update icon:', err);
 					}
 				};
 				reader.readAsDataURL(file);
 			});
-			// open dialog
 			input.click();
+		});
+	}
+
+	// handler for context menu: 隐藏桌面图标
+	const cmHideIcons = document.getElementById('cm-hide-icons');
+	if (cmHideIcons) {
+		cmHideIcons.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			if (desktopIcons) {
+				desktopIcons.style.display = 'none';
+				desktopIcons.setAttribute('aria-hidden', 'true');
+			}
+		});
+	}
+
+	// handler for context menu: 显示桌面图标
+	const cmShowIcons = document.getElementById('cm-show-icons');
+	if (cmShowIcons) {
+		cmShowIcons.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			if (desktopIcons) {
+				desktopIcons.style.display = 'block';
+				desktopIcons.setAttribute('aria-hidden', 'false');
+			}
 		});
 	}
 
