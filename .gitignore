@@ -1,6 +1,6 @@
 # Logs
 
-public/wallpaper/*
+wallpaper/
 logs
 _.log
 npm-debug.log_
