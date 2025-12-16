@@ -42,10 +42,10 @@ button {
 .wallpaper {
 	position: absolute;
 	inset: 0;
-	background-image: url('https://pic4.zhimg.com/v2-464589cf2891622050eb7b629e45eb99_r.jpg');
+	background-image: url('wallpaper/wallpaper5.jpg');
 	background-size: cover;
 	background-position: center;
-	filter: saturate(1.06) contrast(1.04) brightness(0.98);
+	filter: saturate(1.08) contrast(1.07) brightness(0.98);
 }
 
 .taskbar {
@@ -53,6 +53,7 @@ button {
 	left: 0;
 	right: 0;
 	bottom: 0;
+	z-index: 700;
 	height: var(--taskbar-height);
 	display: flex;
 	align-items: center;
@@ -300,7 +301,7 @@ button {
 	opacity: 0;
 	pointer-events: none;
 	transform: translateX(6px) scale(0.99);
-	transition: opacity 0.32s ease, transform 0.12s ease;
+	transition: opacity 0.52s ease, transform 0.12s ease;
 }
 .context-menu .cm-item:hover > .submenu {
 	opacity: 0.77;
@@ -341,11 +342,14 @@ button {
 }
 .desktop-icon.dragging {
 	opacity: 0.95;
-	z-index: 2000;
+	z-index: 500;
 	cursor: grabbing;
 }
 .desktop-icon {
 	touch-action: none;
+}
+.desktop-icon:hover {
+	transform: translateY(-5px);
 }
 .desktop-icon img {
 	width: 48px;
