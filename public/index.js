@@ -678,13 +678,18 @@
 		if (icons.length === 0) return;
 
 		// 计算网格参数
-		const cols = 6; // 每行显示的图标数量
 		const gapX = 24; // 图标之间的水平间距
 		const gapY = 12; // 图标之间的垂直间距
 		const startX = 12; // 起始X坐标
 		const startY = 12; // 起始Y坐标
 		const defaultWidth = 96; // 默认图标宽度
 		const defaultHeight = 116; // 默认图标高度
+
+		// 解决：获取桌面容器的宽度（使用父容器宽度）
+		const desktopWidth = desktopIcons.parentElement.offsetWidth;
+		const availableWidth = desktopWidth - startX * 2;
+		const iconWidthWithGap = defaultWidth + gapX;
+		let cols = Math.max(1, Math.floor(availableWidth / iconWidthWithGap));
 
 		// 遍历所有图标，重新计算位置
 		for (let i = 0; i < icons.length; i++) {

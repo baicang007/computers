@@ -42,7 +42,7 @@ button {
 .wallpaper {
 	position: absolute;
 	inset: 0;
-	background-image: url('wallpaper/wallpaper5.jpg');
+	background-image: url('wallpaper/wallpaper3.jpg');
 	background-size: cover;
 	background-position: center;
 	filter: saturate(1.08) contrast(1.07) brightness(0.98);
@@ -323,9 +323,8 @@ button {
 	position: absolute;
 	left: 12px;
 	top: 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	display: block; /* 改为block显示 */
+	width: calc(100% - 24px); /* 设置宽度为父容器宽度减去左右边距 */
 	z-index: 100;
 	pointer-events: auto;
 }
