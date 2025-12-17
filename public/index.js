@@ -46,13 +46,17 @@
 	const iconContextMenu = document.getElementById('iconContextMenu');
 	let currentIconTarget = null;
 
+	// 在hideIconContextMenu函数中添加移除sub-left类的逻辑
 	function hideIconContextMenu() {
 		if (!iconContextMenu) return;
 		iconContextMenu.setAttribute('aria-hidden', 'true');
 		iconContextMenu.style.left = '-9999px';
 		iconContextMenu.style.top = '-9999px';
+		// 添加这一行：移除sub-left类
+		iconContextMenu.classList.remove('sub-left');
 	}
 
+	// 在showIconContextMenu函数中添加sub-left类的处理逻辑
 	function showIconContextMenu(x, y, targetEl) {
 		if (!iconContextMenu) return;
 		// hide desktop menu if open
@@ -69,6 +73,11 @@
 		if (menuRect.right > desktopRect.right) {
 			const shift = menuRect.right - desktopRect.right + padding;
 			iconContextMenu.style.left = left - shift + 'px';
+			// 添加这几行：添加sub-left类
+			iconContextMenu.classList.add('sub-left');
+		} else {
+			// 添加这几行：移除sub-left类
+			iconContextMenu.classList.remove('sub-left');
 		}
 		if (menuRect.bottom > desktopRect.bottom) {
 			const shiftY = menuRect.bottom - desktopRect.bottom + padding;
@@ -436,19 +445,27 @@
 			try {
 				// compute a default position based on current icons count (grid)
 				const count = desktopIcons ? desktopIcons.children.length : 0;
-				const cols = 6; // icons per column
-				const col = count % cols;
-				const row = Math.floor(count / cols);
 				const gapX = 24; // horizontal gap
 				const gapY = 12; // vertical gap
-				const defaultWidth = 72;
-				const defaultHeight = 92;
-				const pos_x = 12 + col * (defaultWidth + gapX);
-				const pos_y = 12 + row * (defaultHeight + gapY);
+				const startX = 12; // starting X position
+				const startY = 12; // starting Y position
+				const defaultWidth = 96; // default icon width
+				const defaultHeight = 116; // default icon height
+
+				// 与autoArrangeIcons函数相同的动态计算逻辑
+				const desktopWidth = desktopIcons.parentElement.offsetWidth;
+				const availableWidth = desktopWidth - startX * 2;
+				const iconWidthWithGap = defaultWidth + gapX;
+				const cols = Math.max(1, Math.floor(availableWidth / iconWidthWithGap));
+				const col = count % cols;
+				const row = Math.floor(count / cols);
+				const pos_x = startX + col * (defaultWidth + gapX);
+				const pos_y = startY + row * (defaultHeight + gapY);
+
 				const r = await fetch('/api/desktop-items', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON, width: defaultWidth, height: defaultHeight, pos_x, pos_y }),
+					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON, width: 72, height: 92, pos_x, pos_y }),
 					credentials: 'include',
 				});
 				if (r.status === 200) {

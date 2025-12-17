@@ -42,7 +42,7 @@ button {
 .wallpaper {
 	position: absolute;
 	inset: 0;
-	background-image: url('wallpaper/wallpaper3.jpg');
+	background-image: url('wallpaper/wallpaper5.jpg');
 	background-size: cover;
 	background-position: center;
 	filter: saturate(1.08) contrast(1.07) brightness(0.98);
@@ -62,7 +62,7 @@ button {
 	box-sizing: border-box;
 	-webkit-backdrop-filter: blur(10) saturate(1.2);
 	backdrop-filter: blur(10px) saturate(1.2);
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.11));
 	border-top: 1px solid var(--glass-border);
 }
 
@@ -78,9 +78,7 @@ button {
 	font-size: 13px;
 	padding: 6px 10px;
 	border-radius: 8px;
-	background: rgba(255, 255, 255, 0.02);
-	-webkit-backdrop-filter: blur(6);
-	backdrop-filter: blur(6px);
+	background: rgba(255, 255, 255, 0.03);
 	min-width: 58px;
 	text-align: center;
 	cursor: default;
@@ -116,6 +114,7 @@ button {
 	overflow: hidden;
 }
 
+/* Start menu */
 .start-menu {
 	position: absolute;
 	left: 12px;
@@ -129,8 +128,8 @@ button {
 	box-sizing: border-box;
 	-webkit-backdrop-filter: blur(16px) saturate(1.1);
 	backdrop-filter: blur(16px) saturate(1.1);
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.07));
-	border: 1px solid rgba(255, 255, 255, 0.15);
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.7)); /* 增加不透明度 */
+	border: 1px solid rgba(255, 255, 255, 0.3); /* 增加边框不透明度 */
 	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
 	opacity: 0;
 	transform: translateY(6px) scale(0.98);
@@ -139,7 +138,7 @@ button {
 }
 
 .start-menu[aria-hidden='false'] {
-	opacity: 0.95;
+	opacity: 0.95; /* 保持整体不透明度 */
 	transform: translateY(0) scale(1);
 	pointer-events: auto;
 }
@@ -161,7 +160,7 @@ button {
 	cursor: pointer;
 }
 .start-user-btn:hover {
-	background: rgba(255, 255, 255, 0.04);
+	background: rgba(255, 255, 255, 0.17);
 }
 
 /* Auth overlay */
@@ -248,14 +247,14 @@ button {
 	min-width: 200px;
 	border-radius: 10px;
 	padding: 0;
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.07));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.7)); /* 增加不透明度 */
 	-webkit-backdrop-filter: blur(12px) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
-	border: 1px solid rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.3); /* 增加边框不透明度 */
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 	list-style: none;
 	margin: 0;
-	color: #fff;
+	color: #000; /* 颜色改为黑色以适应更亮的背景 */
 	z-index: 1400;
 	display: block;
 	opacity: 0;
@@ -263,8 +262,9 @@ button {
 	pointer-events: none;
 	transition: opacity 0.32s ease, transform 0.12s ease;
 }
+
 .context-menu[aria-hidden='false'] {
-	opacity: 0.95;
+	opacity: 0.95; /* 保持整体不透明度 */
 	transform: translateY(0) scale(1);
 	pointer-events: auto;
 }
@@ -276,7 +276,7 @@ button {
 	position: relative;
 }
 .context-menu .cm-item:hover {
-	background: rgba(255, 255, 255, 0.07);
+	background: rgba(255, 255, 255, 0.17);
 }
 .context-menu .cm-item.has-sub::after {
 	content: '▸';
@@ -293,10 +293,10 @@ button {
 	margin: 1px;
 	border-radius: 10px;
 	padding: 0;
-	background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.07));
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.7)); /* 增加不透明度 */
 	-webkit-backdrop-filter: blur(12) saturate(1.1);
 	backdrop-filter: blur(12px) saturate(1.1);
-	border: 1px solid rgba(255, 255, 255, 0.15);
+	border: 1px solid rgba(255, 255, 255, 0.3); /* 增加边框不透明度 */
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 	opacity: 0;
 	pointer-events: none;
@@ -304,7 +304,7 @@ button {
 	transition: opacity 0.52s ease, transform 0.12s ease;
 }
 .context-menu .cm-item:hover > .submenu {
-	opacity: 0.77;
+	opacity: 0.95; /* 增加子菜单不透明度 */
 	pointer-events: auto;
 	transform: translateX(0) scale(1);
 }
@@ -348,7 +348,7 @@ button {
 	touch-action: none;
 }
 .desktop-icon:hover {
-	transform: translateY(-5px);
+	transform: translateY(-3px);
 }
 .desktop-icon img {
 	width: 48px;
