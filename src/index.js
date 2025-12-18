@@ -57,10 +57,23 @@ async function ensureDesktopItemsTable(db) {
 	await db.prepare(sql).run();
 }
 
+async function ensureUserBackgroundTable(db) {
+	const sql = `CREATE TABLE IF NOT EXISTS user_backgrounds(
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		user_id INTEGER,
+		background_url TEXT,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+	)`;
+	await db.prepare(sql).run();
+}
+
 async function ensureTables(db) {
 	await ensureUserTable(db);
 	await ensureSessionTable(db);
 	await ensureDesktopItemsTable(db);
+	await ensureUserBackgroundTable(db);
 }
 
 function arrayBufferToBase64(buffer) {
@@ -146,7 +159,6 @@ function cookieString(name, value, opts = {}) {
 export default {
 	async fetch(request, env) {
 		const url = new URL(request.url);
-
 		// helper to build JSON responses with required security headers
 		function jsonResponse(obj, status = 200, extraHeaders = {}) {
 			const headers = new Headers(Object.assign({ 'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff' }, extraHeaders));
@@ -337,6 +349,18 @@ export default {
 						.prepare(`INSERT INTO sessions (user_id, token, expires_at) VALUES (?,?, datetime('now', '+7 days'))`)
 						.bind(user.id, token)
 						.run();
+
+					// Check if user has a background set, if not, set default background
+					const backgroundRows = await env.computers.prepare(`SELECT * FROM user_backgrounds WHERE user_id = ?`).bind(user.id).all();
+					if (!backgroundRows.results || backgroundRows.results.length === 0) {
+						// Set default background from CSS
+						const defaultBackground = 'wallpaper/wallpaper5.jpg';
+						await env.computers
+							.prepare(`INSERT INTO user_backgrounds (user_id, background_url) VALUES (?, ?)`)
+							.bind(user.id, defaultBackground)
+							.run();
+					}
+
 					const headers = new Headers({ 'Content-Type': 'application/json' });
 					// For local dev (http) we omit Secure, but set HttpOnly; Cookies are set cross-origin with credentials: include
 					headers.append(
@@ -349,6 +373,49 @@ export default {
 					return jsonResponse({ error: 'invalid body' }, 400);
 				}
 			}
+
+			// Get user background
+			if (url.pathname === '/api/background' && request.method === 'GET') {
+				const user = await getUserFromRequest(request, env);
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
+				const rows = await env.computers.prepare(`SELECT background_url FROM user_backgrounds WHERE user_id = ?`).bind(user.id).all();
+				if (!rows.results || rows.results.length === 0) {
+					// Return default background if no custom background is set
+					return jsonResponse({ background_url: 'wallpaper/wallpaper5.jpg' }, 200);
+				}
+				return jsonResponse({ background_url: rows.results[0].background_url }, 200);
+			}
+
+			// Update user background
+			if (url.pathname === '/api/background' && request.method === 'POST') {
+				const user = await getUserFromRequest(request, env);
+				if (!user) return jsonResponse({ error: 'unauthorized' }, 401);
+
+				try {
+					const body = await request.json();
+					const backgroundUrl = String(body.background_url || '').trim();
+					if (!backgroundUrl) return jsonResponse({ error: 'Missing background_url' }, 400);
+					// Check if user has a background set
+					const backgroundRows = await env.computers.prepare(`SELECT * FROM user_backgrounds WHERE user_id = ?`).bind(user.id).all();
+					if (!backgroundRows.results || backgroundRows.results.length === 0) {
+						// Insert new background
+						await env.computers
+							.prepare(`INSERT INTO user_backgrounds (user_id, background_url) VALUES (?, ?)`)
+							.bind(user.id, backgroundUrl)
+							.run();
+					} else {
+						// Update existing background
+						await env.computers
+							.prepare(`UPDATE user_backgrounds SET background_url = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`)
+							.bind(backgroundUrl, user.id)
+							.run();
+					}
+					return jsonResponse({ success: true, background_url: backgroundUrl }, 200);
+				} catch (e) {
+					return jsonResponse({ error: 'invalid body' }, 400);
+				}
+			}
+
 			if (url.pathname === '/api/session' && request.method === 'GET') {
 				const cookie = request.headers.get('Cookie') || '';
 				const match = cookie

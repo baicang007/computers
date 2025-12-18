@@ -97,7 +97,7 @@
                         <li class="cm-item" role="menuitem" tabindex="-1" id="cm-show-icons">显示桌面图标</li>
                     </ul>
                 </li>
-                <li class="cm-item" role="menuitem" tabindex="-1">个性化</li>
+                <li class="cm-item" role="menuitem" tabindex="-1" id="cm-personalization">个性化</li>
             </ul>
 
             <!-- Icon-specific context menu (右键图标时显示) -->
@@ -132,6 +132,28 @@
                         <button id="scCancelBtn" class="link">取消</button>
                     </div>
                     <div class="auth-error" id="scError"></div>
+                </div>
+            </div>
+
+            <!-- Personalization Modal -->
+            <div class="shortcut-modal" id="personalizationModal" aria-hidden="true">
+                <div class="shortcut-box" style="width: 600px;">
+                    <h3>个性化设置</h3>
+                    <div class="form-group">
+                        <label>桌面背景</label>
+                        <div id="wallpaperPreviewContainer"
+                            style="display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; max-height: 300px; overflow-y: auto;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="backgroundUrl">图片路径</label>
+                        <input id="backgroundUrl" type="text"
+                            placeholder="wallpaper/wallpaper5.jpg 或 https://example.com/image.jpg" style="width: 100%;">
+                    </div>
+                    <div class="form-actions">
+                        <button id="personalizationOkBtn">确定</button>
+                        <button id="personalizationCancelBtn" class="link">取消</button>
+                    </div>
                 </div>
             </div>
         </div>

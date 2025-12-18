@@ -46,6 +46,14 @@
 	const iconContextMenu = document.getElementById('iconContextMenu');
 	let currentIconTarget = null;
 
+	// Personalization modal
+	const personalizationModal = document.getElementById('personalizationModal');
+	const wallpaperPreviewContainer = document.getElementById('wallpaperPreviewContainer');
+	const backgroundUrlInput = document.getElementById('backgroundUrl');
+	const personalizationOkBtn = document.getElementById('personalizationOkBtn');
+	const personalizationCancelBtn = document.getElementById('personalizationCancelBtn');
+	let selectedWallpaper = null;
+
 	// 在hideIconContextMenu函数中添加移除sub-left类的逻辑
 	function hideIconContextMenu() {
 		if (!iconContextMenu) return;
@@ -177,6 +185,22 @@
 	const registerError = document.getElementById('registerError');
 	const logoutBtn = document.getElementById('logoutBtn');
 
+	// 获取并应用用户背景图片
+	async function fetchAndApplyBackground() {
+		try {
+			const r = await fetch('/api/background', { credentials: 'include' });
+			if (r.status === 200) {
+				const data = await r.json();
+				const wallpaper = document.querySelector('.wallpaper');
+				if (wallpaper && data?.background_url) {
+					wallpaper.style.backgroundImage = `url('${data.background_url}')`;
+				}
+			}
+		} catch (e) {
+			console.error('获取背景图片失败:', e);
+		}
+	}
+
 	async function checkSession() {
 		try {
 			const r = await fetch('/api/session', { credentials: 'include' });
@@ -191,6 +215,8 @@
 					}
 					// load desktop items for this user
 					loadDesktopItems();
+					// load user background
+					fetchAndApplyBackground();
 				} catch (_) {}
 			} else {
 				// not logged in
@@ -755,6 +781,8 @@
 				authOverlay.setAttribute('aria-hidden', 'true');
 				// load user desktop items after successful login
 				loadDesktopItems();
+				// load user background after successful login
+				fetchAndApplyBackground();
 			} else {
 				const data = await r.json();
 				loginError.textContent = data?.error || '登录失败';
@@ -817,4 +845,158 @@
 			}
 		});
 	}
+
+	// Personalization functions
+
+	// Add event listener for personalization menu item
+	const personalizationMenuItem = document.getElementById('cm-personalization');
+	if (personalizationMenuItem) {
+		personalizationMenuItem.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			openPersonalizationModal();
+			hideContextMenu();
+		});
+	}
+
+	// Open personalization modal
+	async function openPersonalizationModal() {
+		// Show the modal
+		personalizationModal.setAttribute('aria-hidden', 'false');
+
+		// Load available wallpapers
+		loadWallpapers();
+
+		// Get current background url
+		try {
+			const r = await fetch('/api/background', { credentials: 'include' });
+			if (r.status === 200) {
+				const data = await r.json();
+				if (data?.background_url) {
+					backgroundUrlInput.value = data.background_url;
+					selectedWallpaper = data.background_url;
+				}
+			}
+		} catch (e) {
+			console.error('获取当前背景失败:', e);
+		}
+	}
+
+	// Close personalization modal
+	function closePersonalizationModal() {
+		personalizationModal.setAttribute('aria-hidden', 'true');
+		selectedWallpaper = null;
+		backgroundUrlInput.value = '';
+	}
+
+	// Load wallpapers from the wallpaper folder
+	function loadWallpapers() {
+		// Clear existing previews
+		wallpaperPreviewContainer.innerHTML = '';
+
+		// List of available wallpapers
+		const wallpapers = [
+			'wallpaper/wallpaper1.jpg',
+			'wallpaper/wallpaper2.jpg',
+			'wallpaper/wallpaper3.jpg',
+			'wallpaper/wallpaper5.jpg',
+			'wallpaper/wallpaper6.jpg',
+			'wallpaper/wallpaper7.jpg',
+		];
+
+		// Create preview for each wallpaper
+		wallpapers.forEach((wallpaper) => {
+			const preview = document.createElement('div');
+			preview.style.cursor = 'pointer';
+			preview.style.border = '2px solid transparent';
+			preview.style.borderRadius = '4px';
+			preview.style.overflow = 'hidden';
+			preview.style.width = '100px';
+			preview.style.height = '100px';
+			preview.style.transition = 'border-color 0.2s';
+
+			const img = document.createElement('img');
+			img.src = wallpaper;
+			img.style.width = '100%';
+			img.style.height = '100%';
+			img.style.objectFit = 'cover';
+
+			preview.appendChild(img);
+			wallpaperPreviewContainer.appendChild(preview);
+
+			// Add click event
+			preview.addEventListener('click', () => {
+				// Remove selection from all previews
+				document.querySelectorAll('#wallpaperPreviewContainer > div').forEach((el) => {
+					el.style.borderColor = 'transparent';
+				});
+
+				// Add selection to this preview
+				preview.style.borderColor = '#0078d4';
+
+				// Update selected wallpaper and input field
+				selectedWallpaper = wallpaper;
+				backgroundUrlInput.value = wallpaper;
+			});
+
+			// If this is the currently selected wallpaper, highlight it
+			if (wallpaper === selectedWallpaper) {
+				preview.style.borderColor = '#0078d4';
+			}
+		});
+	}
+
+	// Apply selected background
+	async function applyBackground() {
+		const backgroundUrl = backgroundUrlInput.value.trim();
+		if (!backgroundUrl) return;
+
+		try {
+			// Update background in database
+			const r = await fetch('/api/background', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ background_url: backgroundUrl }),
+				credentials: 'include',
+			});
+
+			if (r.status === 200) {
+				// Apply background to desktop
+				const wallpaper = document.querySelector('.wallpaper');
+				if (wallpaper) {
+					wallpaper.style.backgroundImage = `url('${backgroundUrl}')`;
+				}
+
+				// Close modal
+				closePersonalizationModal();
+			} else {
+				console.error('更新背景失败');
+			}
+		} catch (e) {
+			console.error('更新背景失败:', e);
+		}
+	}
+
+	// Event listeners for personalization modal buttons
+	if (personalizationOkBtn) {
+		personalizationOkBtn.addEventListener('click', applyBackground);
+	}
+
+	if (personalizationCancelBtn) {
+		personalizationCancelBtn.addEventListener('click', closePersonalizationModal);
+	}
+
+	// Close modal when clicking outside
+	personalizationModal.addEventListener('click', (e) => {
+		if (e.target === personalizationModal) {
+			closePersonalizationModal();
+		}
+	});
+
+	// Close modal on Escape key
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'Escape' && personalizationModal.getAttribute('aria-hidden') === 'false') {
+			closePersonalizationModal();
+		}
+	});
 })();

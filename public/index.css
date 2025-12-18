@@ -42,7 +42,7 @@ button {
 .wallpaper {
 	position: absolute;
 	inset: 0;
-	background-image: url('wallpaper/wallpaper5.jpg');
+	/* background-image: url('wallpaper/wallpaper5.jpg'); */
 	background-size: cover;
 	background-position: center;
 	filter: saturate(1.08) contrast(1.07) brightness(0.98);
