@@ -477,7 +477,6 @@
 				const startY = 12; // starting Y position
 				const defaultWidth = 96; // default icon width
 				const defaultHeight = 116; // default icon height
-
 				// 与autoArrangeIcons函数相同的动态计算逻辑
 				const desktopWidth = desktopIcons.parentElement.offsetWidth;
 				const availableWidth = desktopWidth - startX * 2;
@@ -487,7 +486,6 @@
 				const row = Math.floor(count / cols);
 				const pos_x = startX + col * (defaultWidth + gapX);
 				const pos_y = startY + row * (defaultHeight + gapY);
-
 				const r = await fetch('/api/desktop-items', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
@@ -570,13 +568,13 @@
 			el.style.height = containerHeight + 'px';
 			setTimeout(() => {
 				const img = el.querySelector('img');
-				const label = el.querySelector('.label');
+				// const label = el.querySelector('.label');
 				if (img) {
 					img.style.width = imgSize + 'px';
 					img.style.height = imgSize + 'px';
 				}
-				if (label) label.style.width = containerWidth + 'px';
 			}, 0);
+
 			// click opens unless the user just dragged the icon
 			el.addEventListener('click', (ev) => {
 				if (el._wasDragging) {
@@ -709,17 +707,14 @@
 			credentials: 'include',
 		});
 	}
-
 	// when logged in, load items
 	// modify checkSession earlier to call loadDesktopItems when successful
 
 	// 自动排列桌面图标 - 正确移到外部作用域
 	async function autoArrangeIcons() {
 		if (!desktopIcons) return;
-
 		const icons = Array.from(desktopIcons.children);
 		if (icons.length === 0) return;
-
 		// 计算网格参数
 		const gapX = 24; // 图标之间的水平间距
 		const gapY = 12; // 图标之间的垂直间距
@@ -727,27 +722,22 @@
 		const startY = 12; // 起始Y坐标
 		const defaultWidth = 96; // 默认图标宽度
 		const defaultHeight = 116; // 默认图标高度
-
 		// 解决：获取桌面容器的宽度（使用父容器宽度）
 		const desktopWidth = desktopIcons.parentElement.offsetWidth;
 		const availableWidth = desktopWidth - startX * 2;
 		const iconWidthWithGap = defaultWidth + gapX;
 		let cols = Math.max(1, Math.floor(availableWidth / iconWidthWithGap));
-
 		// 遍历所有图标，重新计算位置
 		for (let i = 0; i < icons.length; i++) {
 			const icon = icons[i];
 			const col = i % cols;
 			const row = Math.floor(i / cols);
-
 			// 计算新位置
 			const newX = startX + col * (defaultWidth + gapX);
 			const newY = startY + row * (defaultHeight + gapY);
-
 			// 更新DOM位置
 			icon.style.left = newX + 'px';
 			icon.style.top = newY + 'px';
-
 			// 保存新位置到服务器
 			const id = icon.dataset.id;
 			if (id) {
@@ -863,23 +853,8 @@
 	async function openPersonalizationModal() {
 		// Show the modal
 		personalizationModal.setAttribute('aria-hidden', 'false');
-
 		// Load available wallpapers
 		loadWallpapers();
-
-		// Get current background url
-		try {
-			const r = await fetch('/api/background', { credentials: 'include' });
-			if (r.status === 200) {
-				const data = await r.json();
-				if (data?.background_url) {
-					backgroundUrlInput.value = data.background_url;
-					selectedWallpaper = data.background_url;
-				}
-			}
-		} catch (e) {
-			console.error('获取当前背景失败:', e);
-		}
 	}
 
 	// Close personalization modal
@@ -893,7 +868,6 @@
 	function loadWallpapers() {
 		// Clear existing previews
 		wallpaperPreviewContainer.innerHTML = '';
-
 		// List of available wallpapers
 		const wallpapers = [
 			'wallpaper/wallpaper1.jpg',
@@ -902,6 +876,10 @@
 			'wallpaper/wallpaper5.jpg',
 			'wallpaper/wallpaper6.jpg',
 			'wallpaper/wallpaper7.jpg',
+			'wallpaper/wallpaper8.jpg',
+			'wallpaper/wallpaper9.jpg',
+			'wallpaper/wallpaper10.jpg',
+			'wallpaper/wallpaper11.jpg',
 		];
 
 		// Create preview for each wallpaper
@@ -914,31 +892,25 @@
 			preview.style.width = '100px';
 			preview.style.height = '100px';
 			preview.style.transition = 'border-color 0.2s';
-
 			const img = document.createElement('img');
 			img.src = wallpaper;
 			img.style.width = '100%';
 			img.style.height = '100%';
 			img.style.objectFit = 'cover';
-
 			preview.appendChild(img);
 			wallpaperPreviewContainer.appendChild(preview);
-
 			// Add click event
 			preview.addEventListener('click', () => {
 				// Remove selection from all previews
 				document.querySelectorAll('#wallpaperPreviewContainer > div').forEach((el) => {
 					el.style.borderColor = 'transparent';
 				});
-
 				// Add selection to this preview
 				preview.style.borderColor = '#0078d4';
-
 				// Update selected wallpaper and input field
 				selectedWallpaper = wallpaper;
 				backgroundUrlInput.value = wallpaper;
 			});
-
 			// If this is the currently selected wallpaper, highlight it
 			if (wallpaper === selectedWallpaper) {
 				preview.style.borderColor = '#0078d4';
@@ -950,7 +922,6 @@
 	async function applyBackground() {
 		const backgroundUrl = backgroundUrlInput.value.trim();
 		if (!backgroundUrl) return;
-
 		try {
 			// Update background in database
 			const r = await fetch('/api/background', {
@@ -959,14 +930,12 @@
 				body: JSON.stringify({ background_url: backgroundUrl }),
 				credentials: 'include',
 			});
-
 			if (r.status === 200) {
 				// Apply background to desktop
 				const wallpaper = document.querySelector('.wallpaper');
 				if (wallpaper) {
 					wallpaper.style.backgroundImage = `url('${backgroundUrl}')`;
 				}
-
 				// Close modal
 				closePersonalizationModal();
 			} else {
@@ -985,13 +954,6 @@
 	if (personalizationCancelBtn) {
 		personalizationCancelBtn.addEventListener('click', closePersonalizationModal);
 	}
-
-	// Close modal when clicking outside
-	personalizationModal.addEventListener('click', (e) => {
-		if (e.target === personalizationModal) {
-			closePersonalizationModal();
-		}
-	});
 
 	// Close modal on Escape key
 	document.addEventListener('keydown', (e) => {

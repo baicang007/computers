@@ -42,6 +42,7 @@ button {
 .wallpaper {
 	position: absolute;
 	inset: 0;
+	background-color: #aee3ff;
 	/* background-image: url('wallpaper/wallpaper5.jpg'); */
 	background-size: cover;
 	background-position: center;
@@ -357,10 +358,16 @@ button {
 }
 .desktop-icon .label {
 	font-size: 12px;
-	width: 72px;
-	overflow: hidden;
+	width: auto;
+	height: 22px;
+	padding: 3px;
+	align-items: center;
+	justify-content: center;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	background: rgba(255, 255, 255, 0.52);
+	border: 1px solid rgba(11, 110, 175, 0.9);
+	border-radius: 17%;
 }
 
 /* Create shortcut modal */
@@ -370,7 +377,7 @@ button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 1600;
+	z-index: 1700;
 	background: rgba(0, 0, 0, 0.35);
 	pointer-events: none;
 	opacity: 0;
