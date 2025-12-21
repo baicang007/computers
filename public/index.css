@@ -33,19 +33,17 @@ button {
 .win-desktop {
 	width: 100%;
 	height: 100%;
-	position: relative;
 	overflow: hidden;
-	border-radius: 8px;
-	box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+	position: relative;
 }
 
 .wallpaper {
 	position: absolute;
 	inset: 0;
-	background-color: #aee3ff;
-	/* background-image: url('wallpaper/wallpaper5.jpg'); */
 	background-size: cover;
+	background-color: #aee3ff;
 	background-position: center;
+	/* background-image: url('wallpaper/wallpaper5.jpg'); */
 	filter: saturate(1.08) contrast(1.07) brightness(0.98);
 }
 
@@ -89,15 +87,13 @@ button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 40px;
-	height: 40px;
+	width: 35px;
+	height: 35px;
 	background: var(--glass-bg);
 	border: none;
 	border-radius: 8px;
 	color: white;
 	cursor: pointer;
-	transition: background 0.18s ease, transform 0.08s ease;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 .start-button:hover {
 	transform: translateY(-1px);
@@ -140,13 +136,13 @@ button {
 
 .start-menu[aria-hidden='false'] {
 	opacity: 0.95; /* 保持整体不透明度 */
-	transform: translateY(0) scale(1);
 	pointer-events: auto;
+	transform: translateY(0) scale(1);
 }
 .start-menu-actions {
+	gap: 6px;
 	display: flex;
 	flex-direction: row-reverse;
-	gap: 6px;
 }
 
 .start-user-btn {
@@ -256,10 +252,10 @@ button {
 	list-style: none;
 	margin: 0;
 	color: #000; /* 颜色改为黑色以适应更亮的背景 */
-	z-index: 1400;
+	z-index: 1500;
 	display: block;
 	opacity: 0;
-	transform: translateY(6px) scale(0.99);
+	transform: translateY(1px) scale(0.99);
 	pointer-events: none;
 	transition: opacity 0.32s ease, transform 0.12s ease;
 }
@@ -273,7 +269,7 @@ button {
 	padding: 8px 10px;
 	border-radius: 8px;
 	cursor: default;
-	font-size: 14px;
+	font-size: 15px;
 	position: relative;
 }
 .context-menu .cm-item:hover {
@@ -301,7 +297,7 @@ button {
 	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 	opacity: 0;
 	pointer-events: none;
-	transform: translateX(6px) scale(0.99);
+	transform: translateX(1px) scale(0.99);
 	transition: opacity 0.52s ease, transform 0.12s ease;
 }
 .context-menu .cm-item:hover > .submenu {
@@ -316,7 +312,7 @@ button {
 	right: 100%;
 	margin-left: 0;
 	margin-right: 1px;
-	transform: translateX(-6px) scale(0.99);
+	transform: translateX(-1px) scale(0.99);
 }
 
 /* Desktop icons */

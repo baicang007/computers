@@ -38,6 +38,19 @@
 			closeMenu();
 			hideContextMenu();
 			hideIconContextMenu();
+			closeCreateShortcut();
+			if (personalizationModal.getAttribute('aria-hidden') === 'false') {
+				closePersonalizationModal();
+			}
+		}
+		if (e.key === 'Enter') {
+    		e.preventDefault(); // 阻止默认回车行为
+			if (personalizationModal.getAttribute('aria-hidden') === 'false') {
+    			document.getElementById('personalizationOkBtn').click(); // 触发按钮点击
+			}
+			if (createShortcutModal.getAttribute('aria-hidden') === 'false') {
+    			document.getElementById('scCreateBtn').click(); // 触发按钮点击
+			}
 		}
 	});
 	// Custom desktop context menu
@@ -956,9 +969,9 @@
 	}
 
 	// Close modal on Escape key
-	document.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape' && personalizationModal.getAttribute('aria-hidden') === 'false') {
-			closePersonalizationModal();
-		}
-	});
+	// document.addEventListener('keydown', (e) => {
+	// 	if (e.key === 'Escape' && personalizationModal.getAttribute('aria-hidden') === 'false') {
+	// 		closePersonalizationModal();
+	// 	}
+	// });
 })();
