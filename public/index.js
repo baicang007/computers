@@ -44,12 +44,12 @@
 			}
 		}
 		if (e.key === 'Enter') {
-    		e.preventDefault(); // 阻止默认回车行为
+			e.preventDefault(); // 阻止默认回车行为
 			if (personalizationModal.getAttribute('aria-hidden') === 'false') {
-    			document.getElementById('personalizationOkBtn').click(); // 触发按钮点击
+				document.getElementById('personalizationOkBtn').click(); // 触发按钮点击
 			}
 			if (createShortcutModal.getAttribute('aria-hidden') === 'false') {
-    			document.getElementById('scCreateBtn').click(); // 触发按钮点击
+				document.getElementById('scCreateBtn').click(); // 触发按钮点击
 			}
 		}
 	});
@@ -400,12 +400,10 @@
 		el.style.width = containerWidth + 'px';
 		el.style.height = containerHeight + 'px';
 		const img = el.querySelector('img');
-		const label = el.querySelector('.label');
 		if (img) {
 			img.style.width = imgSize + 'px';
 			img.style.height = imgSize + 'px';
 		}
-		if (label) label.style.width = containerWidth + 'px';
 		// persist to server (width/height fields will store image size)
 		const id = el.dataset.id;
 		try {
@@ -967,11 +965,4 @@
 	if (personalizationCancelBtn) {
 		personalizationCancelBtn.addEventListener('click', closePersonalizationModal);
 	}
-
-	// Close modal on Escape key
-	// document.addEventListener('keydown', (e) => {
-	// 	if (e.key === 'Escape' && personalizationModal.getAttribute('aria-hidden') === 'false') {
-	// 		closePersonalizationModal();
-	// 	}
-	// });
 })();

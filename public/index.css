@@ -1,8 +1,5 @@
 /* index.css - 仿 Windows 11 桌面样式 (半透明毛玻璃风格) */
 :root {
-	/* 取消固定桌面尺寸，保留其他主题变量 */
-	/* --desktop-width: 1920px; */
-	/* --desktop-height: 1080px; */
 	--taskbar-height: 52px;
 	--glass-bg: rgba(255, 255, 255, 0.06);
 	--glass-border: rgba(255, 255, 255, 0.12);
@@ -13,7 +10,7 @@ body {
 	height: 100%;
 	margin: 0;
 	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-	background: #111;
+	background: #026777;
 }
 
 button {
@@ -33,36 +30,36 @@ button {
 .win-desktop {
 	width: 100%;
 	height: 100%;
-	overflow: hidden;
+	overflow-y: auto;
+	overflow-x: hidden;
 	position: relative;
 }
 
 .wallpaper {
-	position: absolute;
-	inset: 0;
+	width: 100%;
+	height: 100%;
+	position: sticky;
+	left: 0;
+	top: 0;
 	background-size: cover;
 	background-color: #aee3ff;
 	background-position: center;
-	/* background-image: url('wallpaper/wallpaper5.jpg'); */
-	filter: saturate(1.08) contrast(1.07) brightness(0.98);
 }
 
 .taskbar {
-	position: absolute;
+	position: fixed;
 	left: 0;
-	right: 0;
 	bottom: 0;
 	z-index: 700;
+	width: 100%;
 	height: var(--taskbar-height);
 	display: flex;
 	align-items: center;
 	padding: 0 12px;
-	gap: 12px;
 	box-sizing: border-box;
-	-webkit-backdrop-filter: blur(10) saturate(1.2);
 	backdrop-filter: blur(10px) saturate(1.2);
+	-webkit-backdrop-filter: blur(10) saturate(1.2);
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.33), rgba(255, 255, 255, 0.11));
-	border-top: 1px solid var(--glass-border);
 }
 
 .taskbar-right {
@@ -114,22 +111,22 @@ button {
 /* Start menu */
 .start-menu {
 	position: absolute;
-	left: 12px;
-	bottom: calc(var(--taskbar-height) + 10px);
+	left: 7px;
+	bottom: calc(var(--taskbar-height) + 7px);
 	width: 320px;
 	border-radius: 12px;
-	padding: 12px;
+	padding: 7px;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
+	gap: 3px;
 	box-sizing: border-box;
 	-webkit-backdrop-filter: blur(16px) saturate(1.1);
 	backdrop-filter: blur(16px) saturate(1.1);
 	background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.7)); /* 增加不透明度 */
 	border: 1px solid rgba(255, 255, 255, 0.3); /* 增加边框不透明度 */
-	box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
+	box-shadow: 0 11px 36px rgba(0, 0, 0, 0.6);
 	opacity: 0;
-	transform: translateY(6px) scale(0.98);
+	transform: translateY(6px) scale(0.97);
 	pointer-events: none;
 	transition: opacity 0.27s ease, transform 0.12s ease;
 }
@@ -345,7 +342,7 @@ button {
 	touch-action: none;
 }
 .desktop-icon:hover {
-	transform: translateY(-3px);
+	transform: scale(1.1);
 }
 .desktop-icon img {
 	width: 48px;
@@ -362,8 +359,8 @@ button {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	background: rgba(255, 255, 255, 0.52);
-	border: 1px solid rgba(11, 110, 175, 0.9);
-	border-radius: 17%;
+	border: 1px solid rgba(9, 95, 152, 0.9);
+	border-radius: 11%;
 }
 
 /* Create shortcut modal */
