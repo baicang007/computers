@@ -71,8 +71,6 @@
 	function hideIconContextMenu() {
 		if (!iconContextMenu) return;
 		iconContextMenu.setAttribute('aria-hidden', 'true');
-		iconContextMenu.style.left = '-9999px';
-		iconContextMenu.style.top = '-9999px';
 		// 添加这一行：移除sub-left类
 		iconContextMenu.classList.remove('sub-left');
 	}
@@ -108,8 +106,8 @@
 	function hideContextMenu() {
 		if (!contextMenu) return;
 		contextMenu.setAttribute('aria-hidden', 'true');
-		contextMenu.style.left = '-9999px';
-		contextMenu.style.top = '-9999px';
+		contextMenu.style.left = '-1983px';
+		contextMenu.style.top = '-1983px';
 		contextMenu.classList.remove('sub-left');
 	}
 	function showContextMenu(x, y) {

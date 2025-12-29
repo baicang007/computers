@@ -270,6 +270,8 @@ button {
 /* Context menu (right-click) */
 .context-menu {
 	position: absolute;
+	top: 0;
+	left: 0;
 	min-width: 200px;
 	border-radius: 10px;
 	padding: 0;
