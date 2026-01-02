@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>本地音频播放器</title>
+    <style>
+        .player {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .progress {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .file-info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="player">
+        <input type="file" id="fileInput" accept="audio/*" />
+
+        <div class="file-info" id="fileInfo">
+            未选择文件
+        </div>
+
+        <div class="controls">
+            <button id="playBtn">播放</button>
+            <button id="pauseBtn">暂停</button>
+            <button id="stopBtn">停止</button>
+            <button id="muteBtn">静音</button>
+            <button id="loopBtn">循环播放</button>
+        </div>
+
+        <div>
+            音量: <input type="range" id="volume" min="0" max="1" step="0.1" value="0.7">
+        </div>
+
+        <div>
+            进度: <input type="range" id="progress" class="progress" min="0" max="100" value="0">
+            <span id="timeDisplay">0:00 / 0:00</span>
+        </div>
+    </div>
+
+    <script>
+        let audio = null;
+        let currentAudioURL = null;
+
+        // 元素引用
+        const elements = {
+            fileInput: document.getElementById('fileInput'),
+            fileInfo: document.getElementById('fileInfo'),
+            playBtn: document.getElementById('playBtn'),
+            pauseBtn: document.getElementById('pauseBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            muteBtn: document.getElementById('muteBtn'),
+            loopBtn: document.getElementById('loopBtn'),
+            volume: document.getElementById('volume'),
+            progress: document.getElementById('progress'),
+            timeDisplay: document.getElementById('timeDisplay')
+        };
+
+        // 文件选择
+        elements.fileInput.addEventListener('change', handleFileSelect);
+
+        // 控制按钮
+        elements.playBtn.addEventListener('click', () => {
+            if (audio) audio.play();
+        });
+
+        elements.pauseBtn.addEventListener('click', () => {
+            if (audio) audio.pause();
+        });
+
+        elements.stopBtn.addEventListener('click', () => {
+            if (audio) {
+                audio.pause();
+                audio.currentTime = 0;
+            }
+        });
+
+        elements.muteBtn.addEventListener('click', () => {
+            if (audio) {
+                audio.muted = !audio.muted;
+                elements.muteBtn.textContent = audio.muted ? '取消静音' : '静音';
+            }
+        });
+
+        // 循环播放
+        elements.loopBtn.addEventListener('click', () => {
+            if (audio) {
+                audio.loop = !audio.loop;
+                elements.loopBtn.textContent = audio.loop ? '取消循环播放' : '循环播放';
+            }
+        });
+
+        // 音量控制
+        elements.volume.addEventListener('input', (e) => {
+            if (audio) audio.volume = e.target.value;
+        });
+
+        // 进度控制
+        elements.progress.addEventListener('input', (e) => {
+            if (audio && audio.duration) {
+                audio.currentTime = (e.target.value / 100) * audio.duration;
+            }
+        });
+
+        // 文件选择处理
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // 清理之前的音频
+            if (audio) {
+                audio.pause();
+                if (currentAudioURL) {
+                    URL.revokeObjectURL(currentAudioURL);
+                }
+            }
+
+            // 创建对象URL
+            currentAudioURL = URL.createObjectURL(file);
+            audio = new Audio(currentAudioURL);
+
+            // 更新文件信息
+            elements.fileInfo.textContent =
+                `文件: ${file.name} (${formatFileSize(file.size)})`;
+
+            // 设置事件监听
+            setupAudioEvents();
+
+            // 自动播放（受浏览器策略限制）
+            audio.play().catch(e => {
+                console.log('自动播放被阻止，需要用户交互');
+            });
+        }
+
+        // 设置音频事件
+        function setupAudioEvents() {
+            // 时间更新
+            audio.addEventListener('timeupdate', () => {
+                if (audio.duration) {
+                    const percent = (audio.currentTime / audio.duration) * 100;
+                    elements.progress.value = percent;
+                    elements.timeDisplay.textContent =
+                        `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+                }
+            });
+
+            // 加载完成
+            audio.addEventListener('loadeddata', () => {
+                elements.fileInfo.textContent +=
+                    ` | 时长: ${formatTime(audio.duration)}`;
+            });
+
+            // 播放结束
+            audio.addEventListener('ended', () => {
+                elements.progress.value = 0;
+                elements.timeDisplay.textContent =
+                    `${formatTime(0)} / ${formatTime(audio.duration)}`;
+            });
+
+            // 错误处理
+            audio.addEventListener('error', (e) => {
+                console.error('音频错误:', e);
+                elements.fileInfo.textContent = '音频加载错误';
+            });
+        }
+
+        // 工具函数
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 清理内存
+        window.addEventListener('beforeunload', () => {
+            if (currentAudioURL) {
+                URL.revokeObjectURL(currentAudioURL);
+            }
+        });
+    </script>
+</body>
+
+</html>

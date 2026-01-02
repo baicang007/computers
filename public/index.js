@@ -195,6 +195,7 @@
 	const loginError = document.getElementById('loginError');
 	const registerError = document.getElementById('registerError');
 	const logoutBtn = document.getElementById('logoutBtn');
+	const startPlayerBtn = document.getElementById('startPlayerBtn');
 
 	// 获取并应用用户背景图片
 	async function fetchAndApplyBackground() {
@@ -845,6 +846,13 @@
 		});
 	}
 
+	if (startPlayerBtn) {
+		startPlayerBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			window.open('/player/vplayer.html', '_blank');
+		});
+	}
 	// Personalization functions
 
 	// Add event listener for personalization menu item

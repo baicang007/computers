@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/icons/favicon.ico">
+    <title>Video 标签音频播放器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .player {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .album-art {
+            width: 100%;
+            height: 300px;
+            background: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .album-art img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .album-art .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+            color: white;
+            padding: 20px;
+        }
+
+        .controls {
+            padding: 30px;
+        }
+
+        .song-info {
+            margin-bottom: 30px;
+        }
+
+        .song-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .artist {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .progress-container {
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: #667eea;
+            transition: width 0.1s linear;
+        }
+
+        .time {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .control-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #667eea;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background: #667eea;
+            color: white;
+            font-size: 28px;
+        }
+
+        .play-btn:hover {
+            background: #5a67d8;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            flex: 1;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            outline: none;
+            --webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #667eea;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .hidden-video {
+            display: none;
+        }
+
+        .playlist-controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .playlist-controls h3 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .add-song-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .add-song-form input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .add-song-form button {
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .add-song-form button:hover {
+            background: #5a67d8;
+        }
+
+        .playlist h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .playlist ul {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .playlist li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            background: #f9f9f9;
+        }
+
+        .playlist li.current {
+            background: #e6f0ff;
+            font-weight: bold;
+        }
+
+        .playlist li:hover {
+            background: #f0f0f0;
+        }
+
+        .playlist-song-info {
+            flex: 1;
+        }
+
+        .playlist-song-title {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .playlist-song-artist {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .playlist-song-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .playlist-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .play-btn-small {
+            color: #667eea;
+        }
+
+        .delete-btn {
+            color: #e74c3c;
+        }
+
+        .playlist-btn:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="player">
+        <div class="album-art">
+            <img id="albumCover"
+                src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
+                alt="专辑封面">
+            <div class="overlay">
+                <div class="song-title" id="songTitle">Summer Vibes</div>
+                <div class="artist" id="artist">Chill Music</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="time">
+                    <span id="currentTime">00:00</span>
+                    <span id="duration">00:00</span>
+                </div>
+            </div>
+
+            <div class="control-buttons">
+                <button class="control-btn" id="prevBtn">⏮</button>
+                <button class="control-btn play-btn" id="playBtn">▶</button>
+                <button class="control-btn" id="nextBtn">⏭</button>
+            </div>
+
+            <div class="volume-container">
+                <span>🔊</span>
+                <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="80">
+            </div>
+
+            <!-- 播放列表控制 -->
+            <div class="playlist-controls">
+                <div class="playlist">
+                    <h4>当前播放列表 (<span id="playlistCount">0</span> 首歌曲)</h4>
+                    <ul id="playlist"></ul>
+                </div>
+
+                <h3>播放列表管理</h3>
+                <div class="add-song-form">
+                    <input type="text" id="songTitleInput" placeholder="歌曲标题">
+                    <input type="text" id="artistInput" placeholder="艺术家">
+                    <input type="text" id="srcInput" placeholder="音频链接">
+                    <input type="text" id="coverInput" placeholder="封面链接(可选)">
+                    <button id="addSongBtn">添加歌曲</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的 video 标签用于播放音频 -->
+    <video id="audioPlayer" class="hidden-video">
+        <source src="https://assets.mixkit.com/music/preview/mixkit-summer-bossa-491.mp3" type="audio/mpeg">
+    </video>
+
+    <script>
+        class AudioPlayer {
+            constructor() {
+                this.video = document.getElementById('audioPlayer');
+                this.playBtn = document.getElementById('playBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.progressBar = document.getElementById('progressBar');
+                this.progress = document.getElementById('progress');
+                this.currentTimeEl = document.getElementById('currentTime');
+                this.durationEl = document.getElementById('duration');
+                this.volumeSlider = document.getElementById('volumeSlider');
+                this.albumCover = document.getElementById('albumCover');
+                this.songTitle = document.getElementById('songTitle');
+                this.artist = document.getElementById('artist');
+
+                this.playlist = [
+                    {
+                        title: "Summer Vibes",
+                        artist: "Chill Music",
+                        src: "https://ting8.yymp3.com/new18/liuzhe/5.mp3",
+                        cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
+                    },
+                    {
+                        title: "Tech House",
+                        artist: "Electronic",
+                        src: "https://ting8.yymp3.com/new27/jinzhiwen3/3.mp3",
+                        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
+                    },
+                    {
+                        title: "Tech House",
+                        artist: "Electronic",
+                        src: "https://ting8.yymp3.com/new27/jinzhiwen3/1.mp3",
+                        cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80"
+                    },
+                    {
+                        title: "Driving Ambition",
+                        artist: "Motivation",
+                        src: "https://ting8.yymp3.com/new24/yangzhongwei4/16.mp3",
+                        cover: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?ixlib=rb-1.2.1&auto=format&fit=crop&w-1350&q=80"
+                    }
+                ];
+
+                this.currentTrack = 0;
+
+                this.init();
+            }
+
+            init() {
+                // 设置初始音量
+                this.video.volume = this.volumeSlider.value / 100;
+
+                // 绑定事件
+                this.bindEvents();
+
+                // 加载第一首歌曲
+                this.loadTrack(this.currentTrack);
+
+                // 初始化播放列表显示
+                this.updatePlaylistDisplay();
+            }
+
+            bindEvents() {
+                // 播放/暂停按钮
+                this.playBtn.addEventListener('click', () => this.togglePlay());
+
+                // 上一首/下一首
+                this.prevBtn.addEventListener('click', () => this.prevTrack());
+                this.nextBtn.addEventListener('click', () => this.nextTrack());
+
+                // 进度条点击
+                this.progressBar.addEventListener('click', (e) => {
+                    const rect = this.progressBar.getBoundingClientRect();
+                    const percent = (e.clientX - rect.left) / rect.width;
+                    this.video.currentTime = percent * this.video.duration;
+                });
+
+                // 音量控制
+                this.volumeSlider.addEventListener('input', (e) => {
+                    this.video.volume = e.target.value / 100;
+                });
+
+                // 播放列表管理
+                document.getElementById('addSongBtn').addEventListener('click', () => this.addSong());
+                document.getElementById('songTitleInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSong();
+                });
+                document.getElementById('artistInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSong();
+                });
+                document.getElementById('srcInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSong();
+                });
+                document.getElementById('coverInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addSong();
+                });
+
+                // 视频事件监听
+                this.video.addEventListener('timeupdate', () => this.updateProgress());
+                this.video.addEventListener('loadedmetadata', () => this.updateDuration());
+                this.video.addEventListener('ended', () => this.nextTrack());
+                this.video.addEventListener('play', () => this.updatePlayButton(true));
+                this.video.addEventListener('pause', () => this.updatePlayButton(false));
+            }
+
+            loadTrack(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+
+                this.currentTrack = index;
+                const track = this.playlist[index];
+
+                // 更新音频源
+                this.video.src = track.src;
+
+                // 更新界面
+                this.albumCover.src = track.cover;
+                this.songTitle.textContent = track.title;
+                this.artist.textContent = track.artist;
+
+                // 更新播放按钮
+                this.updatePlayButton(false);
+
+                // 自动播放（受浏览器策略限制）
+                this.video.play().catch(e => {
+                    console.log('自动播放被阻止，需要用户交互');
+                });
+            }
+
+            togglePlay() {
+                if (this.video.paused) {
+                    this.video.play();
+                } else {
+                    this.video.pause();
+                }
+            }
+
+            updatePlayButton(isPlaying) {
+                this.playBtn.textContent = isPlaying ? '⏸' : '▶';
+            }
+
+            prevTrack() {
+                let newIndex = this.currentTrack - 1;
+                if (newIndex < 0) newIndex = this.playlist.length - 1;
+                this.loadTrack(newIndex);
+            }
+
+            nextTrack() {
+                let newIndex = this.currentTrack + 1;
+                if (newIndex >= this.playlist.length) newIndex = 0;
+                this.loadTrack(newIndex);
+            }
+
+            updateProgress() {
+                if (!this.video.duration) return;
+
+                const percent = (this.video.currentTime / this.video.duration) * 100;
+                this.progress.style.width = `${percent}%`;
+                this.currentTimeEl.textContent = this.formatTime(this.video.currentTime);
+            }
+
+            updateDuration() {
+                if (this.video.duration) {
+                    this.durationEl.textContent = this.formatTime(this.video.duration);
+                }
+            }
+
+            formatTime(seconds) {
+                if (isNaN(seconds)) return '00:00';
+
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            // 添加歌曲到播放列表
+            addSong() {
+                const title = document.getElementById('songTitleInput').value.trim();
+                const artist = document.getElementById('artistInput').value.trim();
+                const src = document.getElementById('srcInput').value.trim();
+                const cover = document.getElementById('coverInput').value.trim() ||
+                    "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80";
+
+                if (!title || !artist || !src) {
+                    alert('请填写歌曲标题、艺术家和音频链接');
+                    return;
+                }
+
+                const newTrack = {
+                    title: title,
+                    artist: artist,
+                    src: src,
+                    cover: cover
+                };
+
+                this.playlist.push(newTrack);
+                this.updatePlaylistDisplay();
+
+                // 清空输入框
+                document.getElementById('songTitleInput').value = '';
+                document.getElementById('artistInput').value = '';
+                document.getElementById('srcInput').value = '';
+                document.getElementById('coverInput').value = '';
+
+                console.log(`已添加歌曲: ${title} by ${artist}`);
+            }
+
+            // 从播放列表中删除歌曲
+            removeSong(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+
+                const removedTrack = this.playlist.splice(index, 1)[0];
+                console.log(`已删除歌曲: ${removedTrack.title} by ${removedTrack.artist}`);
+
+                // 如果删除的是当前播放的歌曲，切换到下一首
+                if (index === this.currentTrack) {
+                    if (this.playlist.length === 0) {
+                        this.video.pause();
+                        this.video.src = '';
+                        this.currentTrack = -1;
+                    } else {
+                        this.currentTrack = index >= this.playlist.length ? 0 : index;
+                        this.loadTrack(this.currentTrack);
+                    }
+                } else if (index < this.currentTrack) {
+                    this.currentTrack--;
+                }
+
+                this.updatePlaylistDisplay();
+            }
+
+            // 播放播放列表中的指定歌曲
+            playTrack(index) {
+                if (index < 0 || index >= this.playlist.length) return;
+
+                this.currentTrack = index;
+                this.loadTrack(index);
+                this.updatePlaylistDisplay();
+            }
+
+            // 更新播放列表显示
+            updatePlaylistDisplay() {
+                const playlistEl = document.getElementById('playlist');
+                const playlistCountEl = document.getElementById('playlistCount');
+
+                // 清空现有列表
+                playlistEl.innerHTML = '';
+
+                // 更新计数
+                playlistCountEl.textContent = this.playlist.length;
+
+                // 添加每个歌曲项
+                this.playlist.forEach((track, index) => {
+                    const li = document.createElement('li');
+                    if (index === this.currentTrack) {
+                        li.classList.add('current');
+                    }
+
+                    li.innerHTML = `
+                        <div class="playlist-song-info">
+                            <div class="playlist-song-title">${track.title}</div>
+                            <div class="playlist-song-artist">${track.artist}</div>
+                        </div>
+                        <div class="playlist-song-actions">
+                            <button class="playlist-btn play-btn-small" onclick="player.playTrack(${index})">▶</button>
+                            <button class="playlist-btn delete-btn" onclick="player.removeSong(${index})">🗑</button>
+                        </div>
+                    `;
+
+                    playlistEl.appendChild(li);
+                });
+            }
+        }
+
+        // 初始化播放器
+        const player = new AudioPlayer();
+    </script>
+</body>
+
+</html>
