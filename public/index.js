@@ -732,7 +732,7 @@
 		const startX = 12; // 起始X坐标
 		const startY = 12; // 起始Y坐标
 		const defaultWidth = 96; // 默认图标宽度
-		const defaultHeight = 116; // 默认图标高度
+		const defaultHeight = 120; // 默认图标高度
 		// 解决：获取桌面容器的宽度（使用父容器宽度）
 		const desktopWidth = desktopIcons.parentElement.offsetWidth;
 		const availableWidth = desktopWidth - startX * 2;
@@ -780,10 +780,6 @@
 			});
 			if (r.status === 200) {
 				authOverlay.setAttribute('aria-hidden', 'true');
-				// load user desktop items after successful login
-				// loadDesktopItems();
-				// load user background after successful login
-				// fetchAndApplyBackground();
 				checkSession();
 			} else {
 				const data = await r.json();

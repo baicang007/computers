@@ -389,6 +389,9 @@
 
                 this.currentTrack = 0;
 
+                // 获取用户名
+                this.username = localStorage.getItem('username') || 'default_user';
+
                 // 初始化IndexedDB
                 this.initDB().then(() => {
                     // 初始化播放器
@@ -403,7 +406,8 @@
             // 初始化IndexedDB
             initDB() {
                 return new Promise((resolve, reject) => {
-                    const request = indexedDB.open('MusicPlayerDB', 1);
+                    const dbName = `MusicPlayerDB_${this.username}`;
+                    const request = indexedDB.open(dbName, 1);
 
                     request.onerror = (event) => {
                         console.error('数据库打开失败:', event.target.error);
@@ -412,7 +416,7 @@
 
                     request.onsuccess = (event) => {
                         this.db = event.target.result;
-                        console.log('数据库打开成功');
+                        console.log('数据库打开成功，用户:', this.username);
                         resolve();
                     };
 
@@ -458,7 +462,7 @@
                         });
                     }
 
-                    console.log('播放列表已保存到IndexedDB');
+                    console.log('播放列表已保存到IndexedDB，用户:', this.username);
                     return true;
                 } catch (error) {
                     console.error('保存播放列表失败:', error);
@@ -484,10 +488,10 @@
                             const tracks = event.target.result;
                             if (tracks && tracks.length > 0) {
                                 this.playlist = tracks;
-                                console.log('从IndexedDB加载了', tracks.length, '首歌曲');
+                                console.log('从IndexedDB加载了', tracks.length, '首歌曲，用户:', this.username);
                                 resolve(true);
                             } else {
-                                console.log('IndexedDB中没有播放列表数据');
+                                console.log('IndexedDB中没有播放列表数据，用户:', this.username);
                                 resolve(false);
                             }
                         };
@@ -581,7 +585,7 @@
             async savePlaylist() {
                 const success = await this.savePlaylistToDB();
                 if (success) {
-                    alert('播放列表已保存到本地存储');
+                    alert(`播放列表已保存到本地存储，用户: ${this.username}`);
                 } else {
                     alert('保存播放列表失败');
                 }
