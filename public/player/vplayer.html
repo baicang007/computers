@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/icons/favicon.ico">
-    <title>Video 标签音频播放器</title>
+    <title>我的音乐播放器</title>
     <style>
         * {
             margin: 0;
@@ -60,11 +60,11 @@
         }
 
         .controls {
-            padding: 30px;
+            padding: 20px;
         }
 
         .song-info {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .song-title {
@@ -79,7 +79,7 @@
         }
 
         .progress-container {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .progress-bar {
@@ -333,6 +333,7 @@
                     <input type="text" id="srcInput" placeholder="音频链接">
                     <input type="text" id="coverInput" placeholder="封面链接(可选)">
                     <button id="addSongBtn">添加歌曲</button>
+                    <button id="savePlaylistBtn">保存播放列表</button>
                 </div>
             </div>
         </div>
@@ -388,7 +389,118 @@
 
                 this.currentTrack = 0;
 
-                this.init();
+                // 初始化IndexedDB
+                this.initDB().then(() => {
+                    // 初始化播放器
+                    this.init();
+                }).catch((error) => {
+                    console.error('初始化数据库失败:', error);
+                    // 即使数据库初始化失败，也继续初始化播放器
+                    this.init();
+                });
+            }
+
+            // 初始化IndexedDB
+            initDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open('MusicPlayerDB', 1);
+
+                    request.onerror = (event) => {
+                        console.error('数据库打开失败:', event.target.error);
+                        reject(event.target.error);
+                    };
+
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        console.log('数据库打开成功');
+                        resolve();
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+
+                        // 如果对象存储不存在，则创建它
+                        if (!db.objectStoreNames.contains('playlists')) {
+                            const objectStore = db.createObjectStore('playlists', { keyPath: 'id', autoIncrement: true });
+                            objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            // 保存播放列表到IndexedDB
+            async savePlaylistToDB() {
+                if (!this.db) {
+                    console.error('数据库未初始化');
+                    return false;
+                }
+
+                try {
+                    const transaction = this.db.transaction(['playlists'], 'readwrite');
+                    const objectStore = transaction.objectStore('playlists');
+
+                    // 清除现有的播放列表数据
+                    await new Promise((resolve, reject) => {
+                        const clearRequest = objectStore.clear();
+                        clearRequest.onsuccess = () => resolve();
+                        clearRequest.onerror = (event) => reject(event.target.error);
+                    });
+
+                    // 添加当前播放列表
+                    for (const track of this.playlist) {
+                        await new Promise((resolve, reject) => {
+                            const addRequest = objectStore.add({
+                                ...track,
+                                timestamp: Date.now()
+                            });
+                            addRequest.onsuccess = () => resolve();
+                            addRequest.onerror = (event) => reject(event.target.error);
+                        });
+                    }
+
+                    console.log('播放列表已保存到IndexedDB');
+                    return true;
+                } catch (error) {
+                    console.error('保存播放列表失败:', error);
+                    return false;
+                }
+            }
+
+            // 从IndexedDB加载播放列表
+            async loadPlaylistFromDB() {
+                if (!this.db) {
+                    console.error('数据库未初始化');
+                    return false;
+                }
+
+                try {
+                    const transaction = this.db.transaction(['playlists'], 'readonly');
+                    const objectStore = transaction.objectStore('playlists');
+
+                    const request = objectStore.getAll();
+
+                    return new Promise((resolve, reject) => {
+                        request.onsuccess = (event) => {
+                            const tracks = event.target.result;
+                            if (tracks && tracks.length > 0) {
+                                this.playlist = tracks;
+                                console.log('从IndexedDB加载了', tracks.length, '首歌曲');
+                                resolve(true);
+                            } else {
+                                console.log('IndexedDB中没有播放列表数据');
+                                resolve(false);
+                            }
+                        };
+
+                        request.onerror = (event) => {
+                            console.error('加载播放列表失败:', event.target.error);
+                            reject(event.target.error);
+                        };
+                    });
+                } catch (error) {
+                    console.error('加载播放列表失败:', error);
+                    return false;
+                }
             }
 
             init() {
@@ -398,11 +510,27 @@
                 // 绑定事件
                 this.bindEvents();
 
-                // 加载第一首歌曲
-                this.loadTrack(this.currentTrack);
+                // 从IndexedDB加载播放列表（如果存在）
+                this.loadPlaylistFromDB().then((loaded) => {
+                    if (!loaded) {
+                        // 如果没有从IndexedDB加载，则使用默认播放列表
+                        console.log('使用默认播放列表');
+                    }
 
-                // 初始化播放列表显示
-                this.updatePlaylistDisplay();
+                    // 加载第一首歌曲
+                    this.loadTrack(this.currentTrack);
+
+                    // 初始化播放列表显示
+                    this.updatePlaylistDisplay();
+                }).catch((error) => {
+                    console.error('加载播放列表失败，使用默认播放列表:', error);
+
+                    // 加载第一首歌曲
+                    this.loadTrack(this.currentTrack);
+
+                    // 初始化播放列表显示
+                    this.updatePlaylistDisplay();
+                });
             }
 
             bindEvents() {
@@ -427,6 +555,7 @@
 
                 // 播放列表管理
                 document.getElementById('addSongBtn').addEventListener('click', () => this.addSong());
+                document.getElementById('savePlaylistBtn').addEventListener('click', () => this.savePlaylist());
                 document.getElementById('songTitleInput').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') this.addSong();
                 });
@@ -446,6 +575,16 @@
                 this.video.addEventListener('ended', () => this.nextTrack());
                 this.video.addEventListener('play', () => this.updatePlayButton(true));
                 this.video.addEventListener('pause', () => this.updatePlayButton(false));
+            }
+
+            // 保存播放列表按钮事件
+            async savePlaylist() {
+                const success = await this.savePlaylistToDB();
+                if (success) {
+                    alert('播放列表已保存到本地存储');
+                } else {
+                    alert('保存播放列表失败');
+                }
             }
 
             loadTrack(index) {

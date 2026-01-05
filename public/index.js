@@ -224,6 +224,7 @@
 					const startUserBtn = document.getElementById('startUserBtn');
 					if (startUserBtn && data?.user?.username) {
 						startUserBtn.textContent = data.user.username;
+						localStorage.setItem('username', data.user.username);
 					}
 					// load desktop items for this user
 					loadDesktopItems();
@@ -780,9 +781,10 @@
 			if (r.status === 200) {
 				authOverlay.setAttribute('aria-hidden', 'true');
 				// load user desktop items after successful login
-				loadDesktopItems();
+				// loadDesktopItems();
 				// load user background after successful login
-				fetchAndApplyBackground();
+				// fetchAndApplyBackground();
+				checkSession();
 			} else {
 				const data = await r.json();
 				loginError.textContent = data?.error || '登录失败';
@@ -850,6 +852,7 @@
 		startPlayerBtn.addEventListener('click', (e) => {
 			e.preventDefault();
 			e.stopPropagation();
+			closeMenu();
 			window.open('/player/vplayer.html', '_blank');
 		});
 	}
