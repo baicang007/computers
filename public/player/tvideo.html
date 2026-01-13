@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../icons/favicon.ico">
+    <title>本地媒体播放器</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        .drop-area {
+            border: 3px dashed #ccc;
+            border-radius: 15px;
+            padding: 60px 20px;
+            margin: 20px 0;
+            transition: all 0.3s;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+
+        .drop-area.drag-over {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .drop-area i {
+            font-size: 64px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .drop-area h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .drop-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        video {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .audio-display {
+            width: 100%;
+            max-height: 400px;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: #2c3e50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 20px;
+            color: white;
+            display: none;
+        }
+
+        .visualizer-bar {
+            width: 4px;
+            height: 20px;
+            background: #fff;
+            margin: 0 1px;
+            border-radius: 2px;
+            animation: visualizer 1.5s infinite ease-in-out;
+        }
+
+        @keyframes visualizer {
+            0% {
+                height: 20%;
+            }
+
+            50% {
+                height: 100%;
+            }
+
+            100% {
+                height: 20%;
+            }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+            display: none;
+        }
+
+        .file-item {
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .file-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .format-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .format-tag {
+            padding: 5px 10px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="drop-zone">
+        <h1>📺我的媒体播放器</h1>
+
+        <div class="drop-area" id="dropArea">
+            <h3>拖放文件到此处</h3>
+            <p>支持 MP4, WebM, OGG, MP3, WAV 等格式</p>
+            <p>或点击此处选择文件📁</p>
+            <input type="file" id="fileSelect" multiple accept="video/*,audio/*" style="display: none;">
+        </div>
+
+        <div class="controls" id="controls" style="display: none;">
+            <button id="playBtn">▶ 播放</button>
+            <button id="pauseBtn">⏸ 暂停</button>
+            <button id="stopBtn">⏹ 停止</button>
+        </div>
+
+        <div class="audio-display" id="audioDisplay">
+            <h3 id="audioTitle">🎵 正在播放音频</h3>
+        </div>
+
+        <video id="videoPlayer" controls></video>
+
+        <div class="file-list" id="fileList">
+            <h4>已选择的文件</h4>
+            <div id="fileItems"></div>
+        </div>
+
+        <script>
+            class DragDropPlayer {
+                constructor() {
+                    this.dropArea = document.getElementById('dropArea');
+                    this.fileSelect = document.getElementById('fileSelect');
+                    this.videoPlayer = document.getElementById('videoPlayer');
+                    this.audioDisplay = document.getElementById('audioDisplay');
+                    this.audioTitle = document.getElementById('audioTitle');
+                    this.controls = document.getElementById('controls');
+                    this.fileList = document.getElementById('fileList');
+                    this.fileItems = document.getElementById('fileItems');
+
+                    this.mediaFiles = [];
+                    this.currentFileIndex = 0;
+                    this.isAudioPlaying = false;
+
+                    this.init();
+                }
+
+                init() {
+                    // 绑定事件
+                    this.bindEvents();
+                }
+
+                bindEvents() {
+                    // 点击选择文件
+                    this.dropArea.addEventListener('click', () => {
+                        this.fileSelect.click();
+                    });
+
+                    // 文件选择变化
+                    this.fileSelect.addEventListener('change', (e) => {
+                        this.handleFiles(e.target.files);
+                    });
+
+                    // 拖放事件
+                    this.dropArea.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        this.dropArea.classList.add('drag-over');
+                    });
+
+                    this.dropArea.addEventListener('dragleave', () => {
+                        this.dropArea.classList.remove('drag-over');
+                    });
+
+                    this.dropArea.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        this.dropArea.classList.remove('drag-over');
+
+                        const files = e.dataTransfer.files;
+                        this.handleFiles(files);
+                    });
+
+                    // 控制按钮
+                    document.getElementById('playBtn').addEventListener('click', () => {
+                        this.videoPlayer.play();
+                    });
+
+                    document.getElementById('pauseBtn').addEventListener('click', () => {
+                        this.videoPlayer.pause();
+                    });
+
+                    document.getElementById('stopBtn').addEventListener('click', () => {
+                        this.videoPlayer.pause();
+                        this.videoPlayer.currentTime = 0;
+                    });
+
+                    // 添加 ended 事件监听器，实现播放完自动播放下一个
+                    this.videoPlayer.addEventListener('ended', () => {
+                        this.playNext();
+                    });
+
+                    // 视频/音频事件
+                    this.videoPlayer.addEventListener('loadedmetadata', () => {
+                        console.log('媒体文件加载完成');
+
+                        // 如果是音频文件，则显示音频显示区
+                        if (this.isAudioPlaying) {
+                            this.audioDisplay.style.display = 'flex';
+                        } else {
+                            this.audioDisplay.style.display = 'none';
+                        }
+                    });
+
+                    this.videoPlayer.addEventListener('error', (e) => {
+                        console.error('媒体播放错误:', this.videoPlayer.error);
+                        alert('无法播放此媒体文件，可能格式不支持或文件已损坏');
+                    });
+                }
+
+                // 播放下一个文件
+                playNext() {
+                    if (this.mediaFiles.length <= 1) return; // 只有一个或没有文件时不执行
+
+                    let nextIndex = this.currentFileIndex + 1;
+
+                    // 如果是最后一个文件，则循环回到第一个
+                    if (nextIndex >= this.mediaFiles.length) {
+                        nextIndex = 0;
+                    }
+
+                    this.playFile(nextIndex);
+                }
+
+                handleFiles(files) {
+                    if (!files || files.length === 0) return;
+
+                    // 清空之前的文件
+                    this.mediaFiles = [];
+                    this.fileItems.innerHTML = '';
+
+                    // 处理每个文件
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+
+                        // 检查文件类型
+                        if (!file.type.startsWith('video/') && !file.type.startsWith('audio/')) {
+                            // alert(`文件 "${file.name}" 不是媒体文件，已跳过`);
+                            continue;
+                        }
+
+                        this.mediaFiles.push(file);
+                        this.addFileToList(file, i);
+                    }
+
+                    if (this.mediaFiles.length > 0) {
+                        // 显示控制和文件列表
+                        this.controls.style.display = 'flex';
+                        this.fileList.style.display = 'block';
+
+                        // 播放第一个文件
+                        this.playFile(0);
+                    }
+                }
+
+                addFileToList(file, index) {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+
+                    // 根据文件类型设置图标
+                    const icon = file.type.startsWith('video/') ? '🎬' : '🎵';
+
+                    fileItem.innerHTML = `
+                    <div style="display: flex; align-items: center; flex: 1;">
+                        <span class="file-icon">${icon}</span>
+                        <span class="file-name" title="${file.name}">${file.name}</span>
+                    </div>
+                    <span style="color: #666; font-size: 12px;">${this.formatFileSize(file.size)}</span>
+                `;
+
+                    // 点击播放该文件
+                    fileItem.addEventListener('click', () => {
+                        this.playFile(index);
+                    });
+
+                    this.fileItems.appendChild(fileItem);
+                }
+
+                playFile(index) {
+                    if (index < 0 || index >= this.mediaFiles.length) return;
+
+                    this.currentFileIndex = index;
+                    const file = this.mediaFiles[index];
+
+                    // 创建对象URL
+                    const fileURL = URL.createObjectURL(file);
+
+                    // 根据文件类型决定如何显示
+                    if (file.type.startsWith('audio/')) {
+                        // 音频文件：保持视频元素显示，同时显示音频显示区
+                        this.videoPlayer.style.display = 'block';
+                        this.audioDisplay.style.display = 'flex';
+                        this.audioTitle.textContent = `🎵 ${file.name}`;
+                        this.isAudioPlaying = true;
+                    } else {
+                        // 视频文件：显示视频元素，隐藏音频显示区
+                        this.videoPlayer.style.display = 'block';
+                        this.audioDisplay.style.display = 'none';
+                        this.isAudioPlaying = false;
+                    }
+
+                    // 设置视频/音频源（使用video标签播放音频）
+                    this.videoPlayer.src = fileURL;
+                    this.videoPlayer.load();
+
+                    // 高亮当前文件
+                    this.highlightCurrentFile();
+
+                    // 尝试播放
+                    setTimeout(() => {
+                        this.videoPlayer.play().catch(error => {
+                            console.log('媒体自动播放被阻止:', error);
+                        });
+                    }, 100); // 延迟播放确保资源加载完成
+                }
+
+                highlightCurrentFile() {
+                    const items = this.fileItems.querySelectorAll('.file-item');
+                    items.forEach((item, index) => {
+                        if (index === this.currentFileIndex) {
+                            item.style.background = '#e0f0ff';
+                            item.style.borderLeft = '4px solid #667eea';
+                        } else {
+                            item.style.background = '#f0f0f0';
+                            item.style.borderLeft = '4px solid transparent';
+                        }
+                    });
+                }
+
+                formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                }
+
+                // 清理对象URL，防止内存泄漏
+                cleanup() {
+                    if (this.videoPlayer.src && this.videoPlayer.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(this.videoPlayer.src);
+                    }
+                }
+            }
+
+            // 初始化播放器
+            const player = new DragDropPlayer();
+
+            // 页面卸载时清理
+            window.addEventListener('beforeunload', () => {
+                player.cleanup();
+            });
+        </script>
+</body>
+
+</html>
