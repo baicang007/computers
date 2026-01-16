@@ -24,6 +24,11 @@
                 </button>
                 <!-- 任务栏右侧：时钟 -->
                 <div class="taskbar-right" aria-hidden="false">
+                    <button class="control-btn" id="playBtn">▶</button>
+                    <button class="control-btn" id="nextBtn">⏭</button>
+                    <video class="hidden-video" id="audioPlayer">
+                        <source src="https://ting8.yymp3.com/new25/2013ndxgst11/183.mp3" type="audio/mpeg">
+                    </video>
                     <div class="taskbar-clock" id="taskbarClock" aria-live="polite">--:--</div>
                 </div>
             </div>
@@ -31,11 +36,11 @@
             <!-- Start menu -->
             <div class="start-menu" id="startMenu" role="menu" aria-hidden="true">
                 <div class="start-user" role="menuitem">
-                    <button class="start-user-btn" id="startPlayerBtn">播放器</button>
+                    <button class="start-user-btn" id="startPlayerBtn">媒体播放器</button>
                     <button class="start-user-btn" id="startUserBtn">你的用户</button>
                 </div>
                 <div class="start-menu-actions">
-                    <button id="logoutBtn">注销</button>
+                    <button class="logout-btn" id="logoutBtn">注销</button>
                 </div>
             </div>
             <!-- Auth overlay (login/register) -->
@@ -148,7 +153,7 @@
                     <div class="form-group">
                         <label for="backgroundUrl">图片路径</label>
                         <input id="backgroundUrl" type="text"
-                            placeholder="请选择图片或输入网络图片地址，比如：https://example.com/image.jpg" style="width: 100%;">
+                            placeholder="请选择图片或输入网络图片地址，比如：https://example.com/image.jpg">
                     </div>
                     <div class="form-actions">
                         <button id="personalizationOkBtn">确定</button>

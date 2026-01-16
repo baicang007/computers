@@ -1,26 +1,86 @@
 // index.js - 简单的 Start 菜单切换和关闭逻辑
 (function () {
+	// ========================================
+	// 全局变量定义
+	// ========================================
+
+	// DOM 元素引用
 	const startButton = document.getElementById('startButton');
 	const startMenu = document.getElementById('startMenu');
 	const desktop = document.getElementById('desktop');
+	const desktopIcons = document.getElementById('desktopIcons');
+
+	// 上下文菜单元素
+	const contextMenu = document.getElementById('desktopContextMenu');
+	const iconContextMenu = document.getElementById('iconContextMenu');
+	let currentIconTarget = null;
+
+	// 认证相关元素
+	const authOverlay = document.getElementById('authOverlay');
+	const loginBox = document.getElementById('loginBox');
+	const registerBox = document.getElementById('registerBox');
+	const loginBtn = document.getElementById('loginBtn');
+	const registerBtn = document.getElementById('registerBtn');
+	const showRegisterBtn = document.getElementById('showRegisterBtn');
+	const showLoginBtn = document.getElementById('showLoginBtn');
+	const loginError = document.getElementById('loginError');
+	const registerError = document.getElementById('registerError');
+	const logoutBtn = document.getElementById('logoutBtn');
+	const startPlayerBtn = document.getElementById('startPlayerBtn');
+
+	// 桌面快捷方式创建相关元素
+	const createShortcutModal = document.getElementById('createShortcutModal');
+	const scName = document.getElementById('scName');
+	const scUrl = document.getElementById('scUrl');
+	const scCreateBtn = document.getElementById('scCreateBtn');
+	const scCancelBtn = document.getElementById('scCancelBtn');
+	const scError = document.getElementById('scError');
+
+	// 个性化设置相关元素
+	const personalizationModal = document.getElementById('personalizationModal');
+	const wallpaperPreviewContainer = document.getElementById('wallpaperPreviewContainer');
+	const backgroundUrlInput = document.getElementById('backgroundUrl');
+	const personalizationOkBtn = document.getElementById('personalizationOkBtn');
+	const personalizationCancelBtn = document.getElementById('personalizationCancelBtn');
+	let selectedWallpaper = null;
+
+	// 任务栏音乐播放器元素
+	const playBtn = document.getElementById('playBtn');
+	const nextBtn = document.getElementById('nextBtn');
+	const audioPlayer = document.getElementById('audioPlayer');
+
+	// 任务栏时钟元素
+	const taskbarClockEl = document.getElementById('taskbarClock');
+
+	// 常量定义
+	const DEFAULT_ICON = '/icons/website.png';
+
+	// ========================================
+	// Start 菜单功能
+	// ========================================
+
 	function openMenu() {
 		startMenu.setAttribute('aria-hidden', 'false');
 		startButton.setAttribute('aria-expanded', 'true');
 	}
+
 	function closeMenu() {
 		startMenu.setAttribute('aria-hidden', 'true');
 		startButton.setAttribute('aria-expanded', 'false');
 	}
+
 	function toggleMenu() {
 		const isHidden = startMenu.getAttribute('aria-hidden') === 'true';
 		if (isHidden) openMenu();
 		else closeMenu();
 	}
+
 	startButton.addEventListener('click', (e) => {
 		e.stopPropagation();
 		toggleMenu();
 	});
-	// Close when clicking outside (also hide context menu if open)
+
+	// 关闭菜单事件监听器
 	document.addEventListener('click', (e) => {
 		if (!startMenu.contains(e.target) && !startButton.contains(e.target)) {
 			closeMenu();
@@ -32,7 +92,8 @@
 			hideIconContextMenu();
 		}
 	});
-	// Close on Escape key
+
+	// 键盘事件监听器
 	document.addEventListener('keydown', (e) => {
 		if (e.key === 'Escape') {
 			closeMenu();
@@ -53,21 +114,48 @@
 			}
 		}
 	});
-	// Custom desktop context menu
-	const contextMenu = document.getElementById('desktopContextMenu');
-	// Icon-specific context menu
-	const iconContextMenu = document.getElementById('iconContextMenu');
-	let currentIconTarget = null;
 
-	// Personalization modal
-	const personalizationModal = document.getElementById('personalizationModal');
-	const wallpaperPreviewContainer = document.getElementById('wallpaperPreviewContainer');
-	const backgroundUrlInput = document.getElementById('backgroundUrl');
-	const personalizationOkBtn = document.getElementById('personalizationOkBtn');
-	const personalizationCancelBtn = document.getElementById('personalizationCancelBtn');
-	let selectedWallpaper = null;
+	// ========================================
+	// 上下文菜单功能
+	// ========================================
 
-	// 在hideIconContextMenu函数中添加移除sub-left类的逻辑
+	// 桌面上下文菜单显示/隐藏函数
+	function hideContextMenu() {
+		if (!contextMenu) return;
+		contextMenu.setAttribute('aria-hidden', 'true');
+		contextMenu.style.left = '-1983px';
+		contextMenu.style.top = '-1983px';
+		contextMenu.classList.remove('sub-left');
+	}
+
+	function showContextMenu(x, y) {
+		if (!contextMenu) return;
+		// position relative to desktop container
+		const desktopRect = desktop.getBoundingClientRect();
+		let left = x - desktopRect.left;
+		let top = y - desktopRect.top;
+		contextMenu.style.left = left + 'px';
+		contextMenu.style.top = top + 'px';
+		contextMenu.setAttribute('aria-hidden', 'false');
+		// adjust if overflowing right/bottom
+		const menuRect = contextMenu.getBoundingClientRect();
+		const padding = 8;
+		if (menuRect.right > desktopRect.right) {
+			// move left
+			const shift = menuRect.right - desktopRect.right + padding;
+			contextMenu.style.left = left - shift + 'px';
+			// mark to open submenus to left
+			contextMenu.classList.add('sub-left');
+		} else {
+			contextMenu.classList.remove('sub-left');
+		}
+		if (menuRect.bottom > desktopRect.bottom) {
+			const shiftY = menuRect.bottom - desktopRect.bottom + padding;
+			contextMenu.style.top = top - shiftY + 'px';
+		}
+	}
+
+	// 图标特定上下文菜单显示/隐藏函数
 	function hideIconContextMenu() {
 		if (!iconContextMenu) return;
 		iconContextMenu.setAttribute('aria-hidden', 'true');
@@ -103,44 +191,12 @@
 			iconContextMenu.style.top = top - shiftY + 'px';
 		}
 	}
-	function hideContextMenu() {
-		if (!contextMenu) return;
-		contextMenu.setAttribute('aria-hidden', 'true');
-		contextMenu.style.left = '-1983px';
-		contextMenu.style.top = '-1983px';
-		contextMenu.classList.remove('sub-left');
-	}
-	function showContextMenu(x, y) {
-		if (!contextMenu) return;
-		// position relative to desktop container
-		const desktopRect = desktop.getBoundingClientRect();
-		let left = x - desktopRect.left;
-		let top = y - desktopRect.top;
-		contextMenu.style.left = left + 'px';
-		contextMenu.style.top = top + 'px';
-		contextMenu.setAttribute('aria-hidden', 'false');
-		// adjust if overflowing right/bottom
-		const menuRect = contextMenu.getBoundingClientRect();
-		const padding = 8;
-		if (menuRect.right > desktopRect.right) {
-			// move left
-			const shift = menuRect.right - desktopRect.right + padding;
-			contextMenu.style.left = left - shift + 'px';
-			// mark to open submenus to left
-			contextMenu.classList.add('sub-left');
-		} else {
-			contextMenu.classList.remove('sub-left');
-		}
-		if (menuRect.bottom > desktopRect.bottom) {
-			const shiftY = menuRect.bottom - desktopRect.bottom + padding;
-			contextMenu.style.top = top - shiftY + 'px';
-		}
-	}
-	// hide context menu on resize/scroll to avoid misplaced menu
+
+	// 隐藏上下文菜单在调整大小/滚动时避免错位的菜单
 	window.addEventListener('resize', hideContextMenu);
 	window.addEventListener('scroll', hideContextMenu, true);
 
-	// Only show desktop context menu when right-clicking on the desktop surface
+	// 判断是否为桌面表面的函数
 	function isDesktopSurface(target) {
 		if (!desktop || !target) return false;
 		// If the click is inside any UI element that is not the desktop surface, ignore
@@ -153,6 +209,7 @@
 		return Boolean(target.closest('#desktop'));
 	}
 
+	// 桌面右键菜单事件监听器
 	desktop.addEventListener('contextmenu', (e) => {
 		// If the event target is not part of the desktop surface (e.g., taskbar, start menu), do nothing
 		if (!isDesktopSurface(e.target)) return;
@@ -162,7 +219,7 @@
 		showContextMenu(e.clientX, e.clientY);
 	});
 
-	// Prevent contextmenu events on known child UI elements from bubbling to `desktop`
+	// 阻止已知子UI元素上的上下文菜单事件冒泡到 `desktop`
 	const taskbarEl = document.querySelector('.taskbar');
 	if (taskbarEl)
 		taskbarEl.addEventListener('contextmenu', (e) => {
@@ -184,18 +241,9 @@
 			e.stopPropagation();
 		});
 
-	// Auth flow
-	const authOverlay = document.getElementById('authOverlay');
-	const loginBox = document.getElementById('loginBox');
-	const registerBox = document.getElementById('registerBox');
-	const loginBtn = document.getElementById('loginBtn');
-	const registerBtn = document.getElementById('registerBtn');
-	const showRegisterBtn = document.getElementById('showRegisterBtn');
-	const showLoginBtn = document.getElementById('showLoginBtn');
-	const loginError = document.getElementById('loginError');
-	const registerError = document.getElementById('registerError');
-	const logoutBtn = document.getElementById('logoutBtn');
-	const startPlayerBtn = document.getElementById('startPlayerBtn');
+	// ========================================
+	// 认证流程
+	// ========================================
 
 	// 获取并应用用户背景图片
 	async function fetchAndApplyBackground() {
@@ -241,12 +289,12 @@
 			authOverlay.setAttribute('aria-hidden', 'false');
 		}
 	}
-	checkSession();
 
 	function showRegister() {
 		registerBox.setAttribute('aria-hidden', 'false');
 		loginBox.style.display = 'none';
 	}
+
 	function showLogin() {
 		registerBox.setAttribute('aria-hidden', 'true');
 		loginBox.style.display = 'block';
@@ -256,302 +304,105 @@
 		e.preventDefault();
 		showRegister();
 	});
+
 	showLoginBtn.addEventListener('click', (e) => {
 		e.preventDefault();
 		showLogin();
 	});
 
-	// Desktop shortcut creation
-	const createShortcutModal = document.getElementById('createShortcutModal');
-	const scName = document.getElementById('scName');
-	const scUrl = document.getElementById('scUrl');
-	const scCreateBtn = document.getElementById('scCreateBtn');
-	const scCancelBtn = document.getElementById('scCancelBtn');
-	const scError = document.getElementById('scError');
-	const desktopIcons = document.getElementById('desktopIcons');
-	const DEFAULT_ICON = '/icons/website.png';
-
-	function openCreateShortcut() {
-		if (!createShortcutModal) return;
-		scError.textContent = '';
-		scName.value = '';
-		scUrl.value = '';
-		createShortcutModal.setAttribute('aria-hidden', 'false');
-	}
-	function closeCreateShortcut() {
-		if (!createShortcutModal) return;
-		createShortcutModal.setAttribute('aria-hidden', 'true');
-	}
-
-	// handler from context menu
-	const cmNewShortcut = document.getElementById('cm-new-shortcut');
-	if (cmNewShortcut) {
-		cmNewShortcut.addEventListener('click', (e) => {
-			e.stopPropagation();
-			hideContextMenu();
-			openCreateShortcut();
-		});
-	}
-
-	// handler for icon-specific context menu: 打开
-	const cmOpen = document.getElementById('cm-open');
-	if (cmOpen) {
-		cmOpen.addEventListener('click', (e) => {
-			e.stopPropagation();
-			hideIconContextMenu();
-			if (!currentIconTarget) return;
-			const url = currentIconTarget.dataset.url;
-			if (!url) return;
-			// simulate clicking the icon: open url in new tab/window
-			window.open(url, '_blank');
-		});
-	}
-
-	// handler for icon-specific context menu: 更换 图标
-	const cmChange = document.getElementById('cm-change');
-	if (cmChange) {
-		cmChange.addEventListener('click', async (e) => {
-			e.stopPropagation();
-			hideIconContextMenu();
-			if (!currentIconTarget) return;
-			// create hidden file input
-			const input = document.createElement('input');
-			input.type = 'file';
-			input.accept = 'image/*';
-			input.style.display = 'none';
-			document.body.appendChild(input);
-			input.addEventListener('change', async () => {
-				const file = input.files && input.files[0];
-				document.body.removeChild(input);
-				if (!file) return;
-				const maxBytes = 100 * 1024; // 100KB
-				if (file.size > maxBytes) {
-					alert('请选择小于100KB的图片');
-					return;
-				}
-				// read as data URL
-				const reader = new FileReader();
-				reader.onload = async () => {
-					const dataUrl = String(reader.result || '');
-					if (!dataUrl) return;
-					const id = currentIconTarget.dataset.id;
-					if (!id) return;
-					try {
-						const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
-							method: 'PATCH',
-							headers: { 'Content-Type': 'application/json' },
-							body: JSON.stringify({ icon: dataUrl }),
-							credentials: 'include',
-						});
-						if (r.status === 200) {
-							// update DOM immediately
-							const img = currentIconTarget.querySelector('img');
-							if (img) img.src = dataUrl;
-						}
-					} catch (err) {
-						console.error('Failed to update icon:', err);
-					}
-				};
-				reader.readAsDataURL(file);
-			});
-			input.click();
-		});
-	}
-
-	// handler for context menu: 隐藏桌面图标
-	const cmHideIcons = document.getElementById('cm-hide-icons');
-	if (cmHideIcons) {
-		cmHideIcons.addEventListener('click', (e) => {
-			e.stopPropagation();
-			hideContextMenu();
-			if (desktopIcons) {
-				desktopIcons.style.display = 'none';
-				desktopIcons.setAttribute('aria-hidden', 'true');
-			}
-		});
-	}
-
-	// handler for context menu: 显示桌面图标
-	const cmShowIcons = document.getElementById('cm-show-icons');
-	if (cmShowIcons) {
-		cmShowIcons.addEventListener('click', (e) => {
-			e.stopPropagation();
-			hideContextMenu();
-			if (desktopIcons) {
-				desktopIcons.style.display = 'block';
-				desktopIcons.setAttribute('aria-hidden', 'false');
-			}
-		});
-	}
-
-	// size submenu handlers
-	const cmSizeLarge = document.getElementById('cm-size-large');
-	const cmSizeMedium = document.getElementById('cm-size-medium');
-	const cmSizeSmall = document.getElementById('cm-size-small');
-
-	async function handleSizeChange(size) {
-		hideIconContextMenu();
-		if (!currentIconTarget) return;
-		const el = currentIconTarget;
-		// compute container and image sizes
-		const imgSize = parseInt(size, 10);
-		const containerWidth = imgSize;
-		const containerHeight = imgSize + 22; // allow space for label
-		el.style.width = containerWidth + 'px';
-		el.style.height = containerHeight + 'px';
-		const img = el.querySelector('img');
-		if (img) {
-			img.style.width = imgSize + 'px';
-			img.style.height = imgSize + 'px';
+	// 登录按钮事件监听器
+	loginBtn.addEventListener('click', async (e) => {
+		e.preventDefault();
+		loginError.textContent = '';
+		const username = document.getElementById('loginUsername').value.trim();
+		const password = document.getElementById('loginPassword').value;
+		if (!username || !password) {
+			loginError.textContent = '请输入用户名和密码';
+			return;
 		}
-		// persist to server (width/height fields will store image size)
-		const id = el.dataset.id;
 		try {
-			await saveIconPosition(id, parseInt(el.style.left || '0', 10) || 0, parseInt(el.style.top || '0', 10) || 0, imgSize, imgSize);
+			const r = await fetch('/api/login', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username, password }),
+				credentials: 'include',
+			});
+			if (r.status === 200) {
+				authOverlay.setAttribute('aria-hidden', 'true');
+				checkSession();
+			} else {
+				const data = await r.json();
+				loginError.textContent = data?.error || '登录失败';
+			}
 		} catch (e) {
-			// failed to save; reload to keep consistency
-			loadDesktopItems();
+			loginError.textContent = '网络错误';
 		}
-	}
+	});
 
-	if (cmSizeLarge)
-		cmSizeLarge.addEventListener('click', (e) => {
-			e.stopPropagation();
-			handleSizeChange(96);
-		});
-	if (cmSizeMedium)
-		cmSizeMedium.addEventListener('click', (e) => {
-			e.stopPropagation();
-			handleSizeChange(72);
-		});
-	if (cmSizeSmall)
-		cmSizeSmall.addEventListener('click', (e) => {
-			e.stopPropagation();
-			handleSizeChange(48);
-		});
-
-	// handler for icon-specific context menu (删除)
-	const cmDelete = document.getElementById('cm-delete');
-	if (cmDelete) {
-		cmDelete.addEventListener('click', async (e) => {
-			e.stopPropagation();
-			hideIconContextMenu();
-			if (!currentIconTarget) return;
-			const id = currentIconTarget.dataset.id;
-			if (!id) return;
-			// Optimistically remove from DOM, then call API
-			const elToRemove = currentIconTarget;
-			elToRemove.remove();
-			currentIconTarget = null;
-			try {
-				const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
-					method: 'DELETE',
-					credentials: 'include',
-				});
-				if (r.status === 200) {
-					// success
-					return;
-				} else {
-					// failed — reload items to restore state
-					await loadDesktopItems();
-				}
-			} catch (err) {
-				await loadDesktopItems();
+	// 注册按钮事件监听器
+	registerBtn.addEventListener('click', async (e) => {
+		e.preventDefault();
+		registerError.textContent = '';
+		const username = document.getElementById('regUsername').value.trim();
+		const password = document.getElementById('regPassword').value;
+		const email = document.getElementById('regEmail').value.trim();
+		if (!username || !password || !email) {
+			registerError.textContent = '请填写所有字段';
+			return;
+		}
+		try {
+			const r = await fetch('/api/register', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ username, password, email }),
+			});
+			if (r.status === 200) {
+				// registration successful, switch to login
+				showLogin();
+			} else {
+				const data = await r.json();
+				registerError.textContent = data?.error || '注册失败';
 			}
-		});
-	}
+		} catch (e) {
+			registerError.textContent = '网络错误';
+		}
+	});
 
-	// Create shortcut modal actions
-	if (scCancelBtn) {
-		scCancelBtn.addEventListener('click', (e) => {
+	// 登出按钮事件监听器
+	if (logoutBtn) {
+		logoutBtn.addEventListener('click', async (e) => {
 			e.preventDefault();
-			closeCreateShortcut();
-		});
-	}
-	if (scCreateBtn) {
-		scCreateBtn.addEventListener('click', async (e) => {
-			e.preventDefault();
-			scError.textContent = '';
-			const name = (scName.value || '').trim();
-			let urlv = (scUrl.value || '').trim();
-			if (!name || !urlv) {
-				scError.textContent = '请填写名称和网址';
-				return;
-			}
-			if (!/^https?:\/\//i.test(urlv)) urlv = 'https://' + urlv;
 			try {
-				// compute a default position based on current icons count (grid)
-				const count = desktopIcons ? desktopIcons.children.length : 0;
-				const gapX = 24; // horizontal gap
-				const gapY = 12; // vertical gap
-				const startX = 12; // starting X position
-				const startY = 12; // starting Y position
-				const defaultWidth = 96; // default icon width
-				const defaultHeight = 116; // default icon height
-				// 与autoArrangeIcons函数相同的动态计算逻辑
-				const desktopWidth = desktopIcons.parentElement.offsetWidth;
-				const availableWidth = desktopWidth - startX * 2;
-				const iconWidthWithGap = defaultWidth + gapX;
-				const cols = Math.max(1, Math.floor(availableWidth / iconWidthWithGap));
-				const col = count % cols;
-				const row = Math.floor(count / cols);
-				const pos_x = startX + col * (defaultWidth + gapX);
-				const pos_y = startY + row * (defaultHeight + gapY);
-				const r = await fetch('/api/desktop-items', {
-					method: 'POST',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON, width: 72, height: 92, pos_x, pos_y }),
-					credentials: 'include',
-				});
+				const r = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
 				if (r.status === 200) {
-					closeCreateShortcut();
-					await loadDesktopItems();
-				} else {
-					const data = await r.json();
-					scError.textContent = data?.error || '创建失败';
+					authOverlay.setAttribute('aria-hidden', 'false');
+					const startUserBtn = document.getElementById('startUserBtn');
+					if (startUserBtn) startUserBtn.textContent = '你的用户';
 				}
 			} catch (e) {
-				scError.textContent = '网络错误';
+				/* ignore */
 			}
 		});
 	}
 
-	// Taskbar clock
-	const taskbarClockEl = document.getElementById('taskbarClock');
-
-	function formatTime(date) {
-		// Return localized time without seconds for a cleaner look, include seconds when desired
-		try {
-			return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-		} catch (e) {
-			// fallback
-			const h = String(date.getHours()).padStart(2, '0');
-			const m = String(date.getMinutes()).padStart(2, '0');
-			return `${h}:${m}`;
-		}
+	// 启动播放器按钮事件监听器
+	if (startPlayerBtn) {
+		startPlayerBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			closeMenu();
+			window.open('/player/tvideo.html', '_blank');
+		});
 	}
 
-	function updateClock() {
-		if (!taskbarClockEl) return;
-		const now = new Date();
-		taskbarClockEl.textContent = formatTime(now);
-	}
+	// 检查会话状态
+	checkSession();
 
-	// update immediately and then every 30s (minute precision) but also update on focus
-	updateClock();
-	let clockInterval = setInterval(updateClock, 30 * 1000);
+	// ========================================
+	// 桌面图标功能
+	// ========================================
 
-	document.addEventListener('visibilitychange', () => {
-		if (document.visibilityState === 'visible') {
-			updateClock();
-		}
-	});
-
-	// ensure interval cleared on unload (cleanup)
-	window.addEventListener('beforeunload', () => {
-		clearInterval(clockInterval);
-	});
-
+	// 渲染桌面项目
 	function renderDesktopItems(items) {
 		if (!desktopIcons) return;
 		desktopIcons.innerHTML = '';
@@ -679,6 +530,7 @@
 		});
 	}
 
+	// 转义HTML函数
 	function escapeHtml(str) {
 		return String(str).replace(
 			/[&<>"']/g,
@@ -693,6 +545,7 @@
 		);
 	}
 
+	// 加载桌面项目
 	async function loadDesktopItems() {
 		try {
 			const r = await fetch('/api/desktop-items', { credentials: 'include' });
@@ -705,7 +558,7 @@
 		}
 	}
 
-	// save icon position/size to backend
+	// 保存图标位置/大小到后端
 	async function saveIconPosition(id, pos_x, pos_y, width, height) {
 		if (!id) return;
 		const body = { pos_x: parseInt(pos_x, 10) || 0, pos_y: parseInt(pos_y, 10) || 0 };
@@ -718,10 +571,8 @@
 			credentials: 'include',
 		});
 	}
-	// when logged in, load items
-	// modify checkSession earlier to call loadDesktopItems when successful
 
-	// 自动排列桌面图标 - 正确移到外部作用域
+	// 自动排列桌面图标
 	async function autoArrangeIcons() {
 		if (!desktopIcons) return;
 		const icons = Array.from(desktopIcons.children);
@@ -761,34 +612,93 @@
 		}
 	}
 
-	// 登录按钮事件监听器（只保留一个）
-	loginBtn.addEventListener('click', async (e) => {
-		e.preventDefault();
-		loginError.textContent = '';
-		const username = document.getElementById('loginUsername').value.trim();
-		const password = document.getElementById('loginPassword').value;
-		if (!username || !password) {
-			loginError.textContent = '请输入用户名和密码';
-			return;
-		}
-		try {
-			const r = await fetch('/api/login', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username, password }),
-				credentials: 'include',
-			});
-			if (r.status === 200) {
-				authOverlay.setAttribute('aria-hidden', 'true');
-				checkSession();
-			} else {
-				const data = await r.json();
-				loginError.textContent = data?.error || '登录失败';
+	// ========================================
+	// 桌面快捷方式创建功能
+	// ========================================
+
+	// 打开/关闭创建快捷方式模态框
+	function openCreateShortcut() {
+		if (!createShortcutModal) return;
+		scError.textContent = '';
+		scName.value = '';
+		scUrl.value = '';
+		createShortcutModal.setAttribute('aria-hidden', 'false');
+	}
+
+	function closeCreateShortcut() {
+		if (!createShortcutModal) return;
+		createShortcutModal.setAttribute('aria-hidden', 'true');
+	}
+
+	// 创建快捷方式模态框事件监听器
+	if (scCancelBtn) {
+		scCancelBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			closeCreateShortcut();
+		});
+	}
+
+	if (scCreateBtn) {
+		scCreateBtn.addEventListener('click', async (e) => {
+			e.preventDefault();
+			scError.textContent = '';
+			const name = (scName.value || '').trim();
+			let urlv = (scUrl.value || '').trim();
+			if (!name || !urlv) {
+				scError.textContent = '请填写名称和网址';
+				return;
 			}
-		} catch (e) {
-			loginError.textContent = '网络错误';
-		}
-	});
+			if (!/^https?:\/\//i.test(urlv)) urlv = 'https://' + urlv;
+			try {
+				// compute a default position based on current icons count (grid)
+				const count = desktopIcons ? desktopIcons.children.length : 0;
+				const gapX = 24; // horizontal gap
+				const gapY = 12; // vertical gap
+				const startX = 12; // starting X position
+				const startY = 12; // starting Y position
+				const defaultWidth = 96; // default icon width
+				const defaultHeight = 116; // default icon height
+				// 与autoArrangeIcons函数相同的动态计算逻辑
+				const desktopWidth = desktopIcons.parentElement.offsetWidth;
+				const availableWidth = desktopWidth - startX * 2;
+				const iconWidthWithGap = defaultWidth + gapX;
+				const cols = Math.max(1, Math.floor(availableWidth / iconWidthWithGap));
+				const col = count % cols;
+				const row = Math.floor(count / cols);
+				const pos_x = startX + col * (defaultWidth + gapX);
+				const pos_y = startY + row * (defaultHeight + gapY);
+				const r = await fetch('/api/desktop-items', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ name, url: urlv, icon: DEFAULT_ICON, width: 72, height: 92, pos_x, pos_y }),
+					credentials: 'include',
+				});
+				if (r.status === 200) {
+					closeCreateShortcut();
+					await loadDesktopItems();
+				} else {
+					const data = await r.json();
+					scError.textContent = data?.error || '创建失败';
+				}
+			} catch (e) {
+				scError.textContent = '网络错误';
+			}
+		});
+	}
+
+	// ========================================
+	// 上下文菜单项事件监听器
+	// ========================================
+
+	// 桌面上下文菜单项事件监听器
+	const cmNewShortcut = document.getElementById('cm-new-shortcut');
+	if (cmNewShortcut) {
+		cmNewShortcut.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			openCreateShortcut();
+		});
+	}
 
 	// 自动排列图标菜单项事件监听器
 	const cmAutoArrange = document.getElementById('cm-auto-arrange');
@@ -800,72 +710,245 @@
 		});
 	}
 
-	registerBtn.addEventListener('click', async (e) => {
-		e.preventDefault();
-		registerError.textContent = '';
-		const username = document.getElementById('regUsername').value.trim();
-		const password = document.getElementById('regPassword').value;
-		const email = document.getElementById('regEmail').value.trim();
-		if (!username || !password || !email) {
-			registerError.textContent = '请填写所有字段';
-			return;
-		}
-		try {
-			const r = await fetch('/api/register', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username, password, email }),
-			});
-			if (r.status === 200) {
-				// registration successful, switch to login
-				showLogin();
-			} else {
-				const data = await r.json();
-				registerError.textContent = data?.error || '注册失败';
+	// 处理上下文菜单: 隐藏桌面图标
+	const cmHideIcons = document.getElementById('cm-hide-icons');
+	if (cmHideIcons) {
+		cmHideIcons.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			if (desktopIcons) {
+				desktopIcons.style.display = 'none';
+				desktopIcons.setAttribute('aria-hidden', 'true');
 			}
+		});
+	}
+
+	// 处理上下文菜单: 显示桌面图标
+	const cmShowIcons = document.getElementById('cm-show-icons');
+	if (cmShowIcons) {
+		cmShowIcons.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideContextMenu();
+			if (desktopIcons) {
+				desktopIcons.style.display = 'block';
+				desktopIcons.setAttribute('aria-hidden', 'false');
+			}
+		});
+	}
+
+	// 图标特定上下文菜单项事件监听器
+	const cmOpen = document.getElementById('cm-open');
+	if (cmOpen) {
+		cmOpen.addEventListener('click', (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			const url = currentIconTarget.dataset.url;
+			if (!url) return;
+			// simulate clicking the icon: open url in new tab/window
+			window.open(url, '_blank');
+		});
+	}
+
+	// 处理图标特定上下文菜单: 更换 图标
+	const cmChange = document.getElementById('cm-change');
+	if (cmChange) {
+		cmChange.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			// create hidden file input
+			const input = document.createElement('input');
+			input.type = 'file';
+			input.accept = 'image/*';
+			input.style.display = 'none';
+			document.body.appendChild(input);
+			input.addEventListener('change', async () => {
+				const file = input.files && input.files[0];
+				document.body.removeChild(input);
+				if (!file) return;
+				const maxBytes = 100 * 1024; // 100KB
+				if (file.size > maxBytes) {
+					alert('请选择小于100KB的图片');
+					return;
+				}
+				// read as data URL
+				const reader = new FileReader();
+				reader.onload = async () => {
+					const dataUrl = String(reader.result || '');
+					if (!dataUrl) return;
+					const id = currentIconTarget.dataset.id;
+					if (!id) return;
+					try {
+						const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
+							method: 'PATCH',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ icon: dataUrl }),
+							credentials: 'include',
+						});
+						if (r.status === 200) {
+							// update DOM immediately
+							const img = currentIconTarget.querySelector('img');
+							if (img) img.src = dataUrl;
+						}
+					} catch (err) {
+						console.error('Failed to update icon:', err);
+					}
+				};
+				reader.readAsDataURL(file);
+			});
+			input.click();
+		});
+	}
+
+	// 处理图标特定上下文菜单 (删除)
+	const cmDelete = document.getElementById('cm-delete');
+	if (cmDelete) {
+		cmDelete.addEventListener('click', async (e) => {
+			e.stopPropagation();
+			hideIconContextMenu();
+			if (!currentIconTarget) return;
+			const id = currentIconTarget.dataset.id;
+			if (!id) return;
+			// Optimistically remove from DOM, then call API
+			const elToRemove = currentIconTarget;
+			elToRemove.remove();
+			currentIconTarget = null;
+			try {
+				const r = await fetch(`/api/desktop-items/${encodeURIComponent(id)}`, {
+					method: 'DELETE',
+					credentials: 'include',
+				});
+				if (r.status === 200) {
+					// success
+					return;
+				} else {
+					// failed — reload items to restore state
+					await loadDesktopItems();
+				}
+			} catch (err) {
+				await loadDesktopItems();
+			}
+		});
+	}
+
+	// 大小子菜单处理器
+	const cmSizeLarge = document.getElementById('cm-size-large');
+	const cmSizeMedium = document.getElementById('cm-size-medium');
+	const cmSizeSmall = document.getElementById('cm-size-small');
+
+	async function handleSizeChange(size) {
+		hideIconContextMenu();
+		if (!currentIconTarget) return;
+		const el = currentIconTarget;
+		// compute container and image sizes
+		const imgSize = parseInt(size, 10);
+		const containerWidth = imgSize;
+		const containerHeight = imgSize + 22; // allow space for label
+		el.style.width = containerWidth + 'px';
+		el.style.height = containerHeight + 'px';
+		const img = el.querySelector('img');
+		if (img) {
+			img.style.width = imgSize + 'px';
+			img.style.height = imgSize + 'px';
+		}
+		// persist to server (width/height fields will store image size)
+		const id = el.dataset.id;
+		try {
+			await saveIconPosition(id, parseInt(el.style.left || '0', 10) || 0, parseInt(el.style.top || '0', 10) || 0, imgSize, imgSize);
 		} catch (e) {
-			registerError.textContent = '网络错误';
+			// failed to save; reload to keep consistency
+			loadDesktopItems();
+		}
+	}
+
+	if (cmSizeLarge)
+		cmSizeLarge.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(96);
+		});
+	if (cmSizeMedium)
+		cmSizeMedium.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(72);
+		});
+	if (cmSizeSmall)
+		cmSizeSmall.addEventListener('click', (e) => {
+			e.stopPropagation();
+			handleSizeChange(48);
+		});
+
+	// ========================================
+	// 任务音乐播放器功能
+	// ========================================
+
+	// 任务栏播放器按钮事件监听器
+	playBtn.addEventListener('click', () => {
+		if (audioPlayer.paused) {
+			audioPlayer.play();
+			playBtn.textContent = '⏸';
+		} else {
+			audioPlayer.pause();
+			playBtn.textContent = '▶';
 		}
 	});
 
-	if (logoutBtn) {
-		logoutBtn.addEventListener('click', async (e) => {
-			e.preventDefault();
-			try {
-				const r = await fetch('/api/logout', { method: 'POST', credentials: 'include' });
-				if (r.status === 200) {
-					authOverlay.setAttribute('aria-hidden', 'false');
-					const startUserBtn = document.getElementById('startUserBtn');
-					if (startUserBtn) startUserBtn.textContent = '你的用户';
-				}
-			} catch (e) {
-				/* ignore */
-			}
-		});
+	nextBtn.addEventListener('click', () => {
+		// Logic to play next track
+		loadRandomTrack();
+	});
+
+	function loadRandomTrack() {
+		randomIndex = Math.floor(Math.random() * 199 + 1);
+		let url = `https://ting8.yymp3.com/new25/2013ndxgst11/${randomIndex}.mp3`;
+		audioPlayer.src = url;
+		audioPlayer.load();
+		audioPlayer.play();
+		playBtn.textContent = '⏸';
 	}
 
-	if (startPlayerBtn) {
-		startPlayerBtn.addEventListener('click', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			closeMenu();
-			window.open('/player/vplayer.html', '_blank');
-		});
-	}
-	// Personalization functions
+	// ========================================
+	// 任务栏时钟功能
+	// ========================================
 
-	// Add event listener for personalization menu item
-	const personalizationMenuItem = document.getElementById('cm-personalization');
-	if (personalizationMenuItem) {
-		personalizationMenuItem.addEventListener('click', (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-			openPersonalizationModal();
-			hideContextMenu();
-		});
+	function formatTime(date) {
+		// Return localized time without seconds for a cleaner look, include seconds when desired
+		try {
+			return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		} catch (e) {
+			// fallback
+			const h = String(date.getHours()).padStart(2, '0');
+			const m = String(date.getMinutes()).padStart(2, '0');
+			return `${h}:${m}`;
+		}
 	}
 
-	// Open personalization modal
+	function updateClock() {
+		if (!taskbarClockEl) return;
+		const now = new Date();
+		taskbarClockEl.textContent = formatTime(now);
+	}
+
+	// update immediately and then every 30s (minute precision) but also update on focus
+	updateClock();
+	let clockInterval = setInterval(updateClock, 30 * 1000);
+
+	document.addEventListener('visibilitychange', () => {
+		if (document.visibilityState === 'visible') {
+			updateClock();
+		}
+	});
+
+	// ensure interval cleared on unload (cleanup)
+	window.addEventListener('beforeunload', () => {
+		clearInterval(clockInterval);
+	});
+
+	// ========================================
+	// 个性化设置功能
+	// ========================================
+
+	// 打开个性化模态框
 	async function openPersonalizationModal() {
 		// Show the modal
 		personalizationModal.setAttribute('aria-hidden', 'false');
@@ -873,14 +956,14 @@
 		loadWallpapers();
 	}
 
-	// Close personalization modal
+	// 关闭个性化模态框
 	function closePersonalizationModal() {
 		personalizationModal.setAttribute('aria-hidden', 'true');
 		selectedWallpaper = null;
 		backgroundUrlInput.value = '';
 	}
 
-	// Load wallpapers from the wallpaper folder
+	// 从壁纸文件夹加载壁纸
 	function loadWallpapers() {
 		// Clear existing previews
 		wallpaperPreviewContainer.innerHTML = '';
@@ -934,7 +1017,7 @@
 		});
 	}
 
-	// Apply selected background
+	// 应用选定的背景
 	async function applyBackground() {
 		const backgroundUrl = backgroundUrlInput.value.trim();
 		if (!backgroundUrl) return;
@@ -962,7 +1045,18 @@
 		}
 	}
 
-	// Event listeners for personalization modal buttons
+	// 个性化菜单项事件监听器
+	const personalizationMenuItem = document.getElementById('cm-personalization');
+	if (personalizationMenuItem) {
+		personalizationMenuItem.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			openPersonalizationModal();
+			hideContextMenu();
+		});
+	}
+
+	// 个性化模态框按钮事件监听器
 	if (personalizationOkBtn) {
 		personalizationOkBtn.addEventListener('click', applyBackground);
 	}
