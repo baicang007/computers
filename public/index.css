@@ -6,21 +6,18 @@
 
 	/* 毛玻璃效果 */
 	--glass-blur: blur(12px) saturate(1.1);
-	--glass-blur-strong: blur(16px) saturate(1.1);
-	--glass-blur-light: blur(10px) saturate(1.2);
+	--glass-blur-light: blur(17px) saturate(1.2);
 
 	/* 玻璃背景渐变 */
 	--glass-gradient: linear-gradient(180deg, rgba(109, 95, 95, 0.33), rgba(183, 183, 183, 0.11));
 	--glass-gradient-dark: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
 
 	/* 边框和阴影 */
-	--glass-border-color: rgba(255, 255, 255, 0.3);
 	--glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 
 	/* 过渡动画 */
-	--transition-fast: 0.12s ease;
-	--transition-normal: 0.27s ease;
-	--transition-slow: 0.52s ease;
+	--transition-fast: 0.27s ease;
+	--transition-normal: 0.52s ease;
 
 	/* 颜色 */
 	--text-primary: rgba(255, 255, 255, 0.9);
@@ -29,7 +26,6 @@
 	--bg-overlay: rgba(0, 0, 0, 0.45);
 	--hover-bg: rgba(255, 255, 255, 0.17);
 	--icon-label-bg: rgba(97, 90, 90, 0.52);
-	--icon-label-border: rgba(8, 8, 8, 0.9);
 }
 
 html,
@@ -168,8 +164,8 @@ button {
 	flex-direction: column;
 	gap: 3px;
 	box-sizing: border-box;
-	-webkit-backdrop-filter: var(--glass-blur-strong);
-	backdrop-filter: var(--glass-blur-strong);
+	-webkit-backdrop-filter: var(--glass-blur-light);
+	backdrop-filter: var(--glass-blur-light);
 	background: var(--glass-gradient);
 	box-shadow: var(--glass-shadow);
 	opacity: 0;
@@ -346,7 +342,7 @@ button {
 	opacity: 0;
 	pointer-events: none;
 	transform: translateX(1px) scale(0.99);
-	transition: opacity var(--transition-slow), transform var(--transition-fast);
+	transition: opacity var(--transition-normal), transform var(--transition-fast);
 }
 .context-menu .cm-item:hover > .submenu {
 	opacity: 0.95; /* 增加子菜单不透明度 */
@@ -398,7 +394,6 @@ button {
 .desktop-icon img {
 	width: 48px;
 	height: 48px;
-	filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.6));
 }
 .desktop-icon .label {
 	font-size: 12px;
