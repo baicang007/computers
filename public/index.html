@@ -22,13 +22,19 @@
                     <img src="/icons/windows.png" class="start-icon" alt="" aria-hidden="true">
                     <span class="sr-only">Start</span>
                 </button>
-                <!-- 任务栏右侧：时钟 -->
+                <!-- 任务栏右侧：音频控制 -->
                 <div class="taskbar-right" aria-hidden="false">
+                    <div class="audio-controls">
+                        <button class="control-btn" id="volumeBtn">🔊</button>
+                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.01"
+                            value="1">
+                    </div>
                     <button class="control-btn" id="playBtn">▶</button>
                     <button class="control-btn" id="nextBtn">⏭</button>
                     <video class="hidden-video" id="audioPlayer">
-                        <source src="https://ting8.yymp3.com/new25/2013ndxgst11/183.mp3" type="audio/mpeg">
+                        <source src="https://ting8.yymp3.com/new25/2013ndxgst11/173.mp3" type="audio/mpeg">
                     </video>
+                    <!-- 任务栏右侧：时钟 -->
                     <div class="taskbar-clock" id="taskbarClock" aria-live="polite">--:--</div>
                 </div>
             </div>

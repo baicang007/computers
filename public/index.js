@@ -48,6 +48,8 @@
 	const playBtn = document.getElementById('playBtn');
 	const nextBtn = document.getElementById('nextBtn');
 	const audioPlayer = document.getElementById('audioPlayer');
+	const volumeBtn = document.getElementById('volumeBtn');
+	const volumeSlider = document.getElementById('volumeSlider');
 
 	// 任务栏时钟元素
 	const taskbarClockEl = document.getElementById('taskbarClock');
@@ -202,7 +204,7 @@
 		// If the click is inside any UI element that is not the desktop surface, ignore
 		// Exclude taskbar, start menu, auth overlays, modals, existing context menus, desktop icons
 		const forbidden = target.closest(
-			'.taskbar, #startMenu, #authOverlay, #createShortcutModal, .context-menu, .desktop-icon, .shortcut-modal'
+			'.taskbar, #startMenu, #authOverlay, #createShortcutModal, .context-menu, .desktop-icon, .shortcut-modal',
 		);
 		if (forbidden) return false;
 		// Otherwise, ensure the clicked element is inside the desktop container
@@ -541,7 +543,7 @@
 					'>': '&gt;',
 					'"': '&quot;',
 					"'": '&#39;',
-				}[c])
+				})[c],
 		);
 	}
 
@@ -881,6 +883,36 @@
 	// ========================================
 	// 任务音乐播放器功能
 	// ========================================
+
+	// 初始化音量
+	audioPlayer.volume = 0.7; // 默认最大音量
+	volumeSlider.value = audioPlayer.volume;
+
+	//播放完毕后自动加载下一首
+	audioPlayer.addEventListener('ended', () => {
+		loadRandomTrack();
+	});
+
+	// 音量按钮事件监听器：切换静音
+	volumeBtn.addEventListener('click', () => {
+		if (audioPlayer.muted) {
+			audioPlayer.muted = false;
+			volumeBtn.textContent = '🔊';
+			volumeSlider.value = audioPlayer.volume;
+		} else {
+			audioPlayer.muted = true;
+			volumeBtn.textContent = '🔇';
+			volumeSlider.value = 0;
+		}
+	});
+
+	// 音量滑块事件监听器：调整音量
+	volumeSlider.addEventListener('input', () => {
+		const volume = parseFloat(volumeSlider.value);
+		audioPlayer.volume = volume;
+		audioPlayer.muted = volume === 0;
+		volumeBtn.textContent = volume === 0 ? '🔇' : '🔊';
+	});
 
 	// 任务栏播放器按钮事件监听器
 	playBtn.addEventListener('click', () => {

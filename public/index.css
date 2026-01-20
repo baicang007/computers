@@ -16,12 +16,12 @@
 	--glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 
 	/* 过渡动画 */
-	--transition-fast: 0.27s ease;
-	--transition-normal: 0.52s ease;
+	--transition-fast: 0.57s ease;
+	--transition-normal: 0.83s ease;
 
 	/* 颜色 */
 	--text-primary: rgba(255, 255, 255, 0.9);
-	--text-link: #aee3ff;
+	--text-link: #198368;
 	--text-error: #ff9b9b;
 	--bg-overlay: rgba(0, 0, 0, 0.45);
 	--hover-bg: rgba(255, 255, 255, 0.17);
@@ -32,7 +32,13 @@ html,
 body {
 	height: 100%;
 	margin: 0;
-	font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		'Helvetica Neue',
+		Arial;
 	background: #026777;
 }
 
@@ -103,11 +109,12 @@ button {
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	transition: all 0.3s;
+	transition: all var(--transition-fast);
 }
 
 .control-btn:hover {
-	color: #667eea;
+	color: var(--text-link);
+	transform: scale(1.1);
 }
 
 .hidden-video {
@@ -171,7 +178,9 @@ button {
 	opacity: 0;
 	transform: translateY(6px) scale(0.97);
 	pointer-events: none;
-	transition: opacity var(--transition-normal), transform var(--transition-fast);
+	transition:
+		opacity var(--transition-normal),
+		transform var(--transition-fast);
 }
 
 .start-menu[aria-hidden='false'] {
@@ -301,7 +310,9 @@ button {
 	opacity: 0;
 	transform: translateY(1px) scale(0.99);
 	pointer-events: none;
-	transition: opacity var(--transition-normal), transform var(--transition-fast);
+	transition:
+		opacity var(--transition-normal),
+		transform var(--transition-fast);
 }
 
 .context-menu[aria-hidden='false'] {
@@ -342,7 +353,9 @@ button {
 	opacity: 0;
 	pointer-events: none;
 	transform: translateX(1px) scale(0.99);
-	transition: opacity var(--transition-normal), transform var(--transition-fast);
+	transition:
+		opacity var(--transition-normal),
+		transform var(--transition-fast);
 }
 .context-menu .cm-item:hover > .submenu {
 	opacity: 0.95; /* 增加子菜单不透明度 */
@@ -445,4 +458,61 @@ button {
 	display: flex;
 	gap: 8px;
 	justify-content: flex-end;
+}
+
+.audio-controls {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	border-radius: 8px;
+	/* background: var(--glass-bg); */
+	transition: all var(--transition-normal);
+}
+
+.audio-controls:hover .volume-slider {
+	width: 83px;
+	display: inline;
+}
+
+.volume-slider {
+	width: 0px;
+	height: 3px;
+	display: none;
+	background: var(--glass-border);
+	border-radius: 2px;
+	outline: none;
+	-webkit-appearance: none;
+	appearance: none;
+	cursor: pointer;
+	transition: background var(--transition-fast);
+}
+
+.volume-slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--text-primary);
+	cursor: pointer;
+	transition: background var(--transition-fast);
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+	background: var(--text-link);
+}
+
+.volume-slider::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: var(--text-primary);
+	cursor: pointer;
+	border: none;
+	transition: background var(--transition-fast);
+}
+
+.volume-slider::-moz-range-thumb:hover {
+	background: var(--text-link);
 }
