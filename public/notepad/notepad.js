@@ -679,13 +679,19 @@ class NotepadApp {
 	}
 
 	applyZoom() {
-		this.textEditor.className = 'text-editor';
+		const zoomFactor = this.zoomLevel / 100; // 将百分比转换为缩放因子
+
+		// 直接缩放整个编辑器
+		this.textEditor.style.transform = `scale(${zoomFactor})`;
+		this.textEditor.style.transformOrigin = '0 0'; // 左上角为缩放原点
+		this.textEditor.style.width = `${100 / zoomFactor}%`; // 调整宽度以补偿缩放
+		this.textEditor.style.height = `${100 / zoomFactor}%`; // 调整高度以补偿缩放
+
+		// 同时保持文字换行设置
 		if (this.wordWrap) {
 			this.textEditor.classList.add('word-wrap');
-		}
-
-		if (this.zoomLevel !== 100) {
-			this.textEditor.classList.add(`zoom-${this.zoomLevel}`);
+		} else {
+			this.textEditor.classList.remove('word-wrap');
 		}
 
 		this.statusBar.zoomLevel.textContent = this.zoomLevel + '%';

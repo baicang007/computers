@@ -421,35 +421,6 @@ body {
 	display: block;
 }
 
-/* 缩放样式 */
-.zoom-50 {
-	font-size: 6.5px;
-}
-.zoom-75 {
-	font-size: 9.75px;
-}
-.zoom-100 {
-	font-size: 13px;
-}
-.zoom-125 {
-	font-size: 16.25px;
-}
-.zoom-150 {
-	font-size: 19.5px;
-}
-.zoom-200 {
-	font-size: 26px;
-}
-.zoom-300 {
-	font-size: 39px;
-}
-.zoom-400 {
-	font-size: 52px;
-}
-.zoom-500 {
-	font-size: 65px;
-}
-
 /* 响应式调整 */
 @media (max-width: 768px) {
 	.dialog {
