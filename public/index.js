@@ -27,6 +27,7 @@
 	const registerError = document.getElementById('registerError');
 	const logoutBtn = document.getElementById('logoutBtn');
 	const startPlayerBtn = document.getElementById('startPlayerBtn');
+	const startNotepadBtn = document.getElementById('startNotepadBtn');
 
 	// 桌面快捷方式创建相关元素
 	const createShortcutModal = document.getElementById('createShortcutModal');
@@ -101,9 +102,11 @@
 			closeMenu();
 			hideContextMenu();
 			hideIconContextMenu();
-			closeCreateShortcut();
 			if (personalizationModal.getAttribute('aria-hidden') === 'false') {
 				closePersonalizationModal();
+			}
+			if (createShortcutModal.getAttribute('aria-hidden') === 'false') {
+				closeCreateShortcut();
 			}
 		}
 		if (e.key === 'Enter') {
@@ -113,6 +116,18 @@
 			}
 			if (createShortcutModal.getAttribute('aria-hidden') === 'false') {
 				document.getElementById('scCreateBtn').click(); // 触发按钮点击
+			}
+			if (loginBox.getAttribute('aria-hidden') === 'false') {
+				document.getElementById('loginBtn').click(); // 触发按钮点击
+			}
+			if (registerBox.getAttribute('aria-hidden') === 'false') {
+				document.getElementById('registerBtn').click(); // 触发按钮点击
+			}
+		}
+		if (e.key === ' ') {
+			if (personalizationModal.getAttribute('aria-hidden') === 'true' && createShortcutModal.getAttribute('aria-hidden') === 'true') {
+				e.preventDefault(); // 阻止默认空格键行为
+				playing();
 			}
 		}
 	});
@@ -393,7 +408,17 @@
 			e.preventDefault();
 			e.stopPropagation();
 			closeMenu();
-			window.open('/player/tvideo.html', '_blank');
+			window.open('./player/tvideo.html', '_blank');
+		});
+	}
+
+	// 启动记事本按钮事件监听器
+	if (startNotepadBtn) {
+		startNotepadBtn.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			closeMenu();
+			window.open('./notepad/notepad.html', '_blank');
 		});
 	}
 
@@ -897,11 +922,11 @@
 	volumeBtn.addEventListener('click', () => {
 		if (audioPlayer.muted) {
 			audioPlayer.muted = false;
-			volumeBtn.textContent = '🔊';
+			volumeBtn.textContent = '♬';
 			volumeSlider.value = audioPlayer.volume;
 		} else {
 			audioPlayer.muted = true;
-			volumeBtn.textContent = '🔇';
+			volumeBtn.textContent = '♪';
 			volumeSlider.value = 0;
 		}
 	});
@@ -911,11 +936,15 @@
 		const volume = parseFloat(volumeSlider.value);
 		audioPlayer.volume = volume;
 		audioPlayer.muted = volume === 0;
-		volumeBtn.textContent = volume === 0 ? '🔇' : '🔊';
+		volumeBtn.textContent = volume === 0 ? '♪' : '♬';
 	});
 
 	// 任务栏播放器按钮事件监听器
 	playBtn.addEventListener('click', () => {
+		playing();
+	});
+
+	function playing() {
 		if (audioPlayer.paused) {
 			audioPlayer.play();
 			playBtn.textContent = '⏸';
@@ -923,7 +952,7 @@
 			audioPlayer.pause();
 			playBtn.textContent = '▶';
 		}
-	});
+	}
 
 	nextBtn.addEventListener('click', () => {
 		// Logic to play next track

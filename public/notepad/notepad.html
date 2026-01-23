@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记事本</title>
+    <link rel="stylesheet" href="notepad.css">
+</head>
+
+<body>
+    <div class="notepad-container">
+        <!-- 标题栏 -->
+        <div class="title-bar">
+            <div class="title-bar-left">
+                <span class="app-icon">📝</span>
+                <span class="app-title">记事本</span>
+                <span class="file-name">无标题</span>
+            </div>
+            <div class="title-bar-right">
+                <button class="title-bar-button minimize">─</button>
+                <button class="title-bar-button maximize">□</button>
+                <button class="title-bar-button close">×</button>
+            </div>
+        </div>
+
+        <!-- 菜单栏 -->
+        <div class="menu-bar">
+            <div class="menu-item" data-menu="file">
+                <span>文件(F)</span>
+                <div class="dropdown-menu" id="file-menu">
+                    <div class="menu-option" data-action="new">新建(N)</div>
+                    <div class="menu-option" data-action="open">打开(O)...</div>
+                    <div class="menu-option" data-action="save">保存(S)</div>
+                    <div class="menu-option" data-action="saveas">另存为(A)...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="page-setup">页面设置(U)...</div>
+                    <div class="menu-option" data-action="print">打印(P)...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="exit">退出(X)</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="edit">
+                <span>编辑(E)</span>
+                <div class="dropdown-menu" id="edit-menu">
+                    <div class="menu-option" data-action="redo">重做(R)</div>
+                    <div class="menu-option" data-action="undo">撤销(U)</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="cut">剪切(T)</div>
+                    <div class="menu-option" data-action="copy">复制(C)</div>
+                    <div class="menu-option" data-action="paste">粘贴(P)</div>
+                    <div class="menu-option" data-action="delete">删除(L)</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="find">查找(F)...</div>
+                    <div class="menu-option" data-action="find-next">查找下一个(N)</div>
+                    <div class="menu-option" data-action="replace">替换(R)...</div>
+                    <div class="menu-option" data-action="goto">转到(G)...</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="select-all">全选(A)</div>
+                    <div class="menu-option" data-action="time-date">时间/日期(D)</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="format">
+                <span>格式(O)</span>
+                <div class="dropdown-menu" id="format-menu">
+                    <div class="menu-option" data-action="word-wrap">自动换行(W)</div>
+                    <div class="menu-option" data-action="font">字体(F)...</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="view">
+                <span>查看(V)</span>
+                <div class="dropdown-menu" id="view-menu">
+                    <div class="menu-option" data-action="zoom-in">放大(I)</div>
+                    <div class="menu-option" data-action="zoom-out">缩小(O)</div>
+                    <div class="menu-option" data-action="zoom-default">恢复默认大小</div>
+                    <div class="menu-separator"></div>
+                    <div class="menu-option" data-action="status-bar">状态栏(S)</div>
+                </div>
+            </div>
+            <div class="menu-item" data-menu="help">
+                <span>帮助(H)</span>
+                <div class="dropdown-menu" id="help-menu">
+                    <div class="menu-option" data-action="view-help">查看帮助(H)</div>
+                    <div class="menu-option" data-action="about">关于记事本(A)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文本编辑区域 -->
+        <div class="editor-container">
+            <textarea id="text-editor" class="text-editor" placeholder="在这里输入文本..." spellcheck="false"></textarea>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar" id="status-bar">
+            <div class="status-left">
+                <span id="line-column">第 1 行，第 1 列</span>
+                <span id="char-count">0 个字符</span>
+            </div>
+            <div class="status-right">
+                <span id="zoom-level">100%</span>
+                <span id="encoding">UTF-8</span>
+                <span id="line-ending">Windows (CRLF)</span>
+                <span id="word-wrap-status">自动换行</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查找对话框 -->
+    <div class="dialog" id="find-dialog">
+        <div class="dialog-header">
+            <span>查找</span>
+            <button class="dialog-close">×</button>
+        </div>
+        <div class="dialog-content">
+            <div class="form-group">
+                <label>查找内容:</label>
+                <input type="text" id="find-input" class="dialog-input">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="match-case">
+                    <label for="match-case">区分大小写</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="wrap-around" checked>
+                    <label for="wrap-around">循环</label>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="dialog-button primary" id="find-next">查找下一个</button>
+            <button class="dialog-button" id="find-cancel">取消</button>
+        </div>
+    </div>
+
+    <!-- 替换对话框 -->
+    <div class="dialog" id="replace-dialog">
+        <div class="dialog-header">
+            <span>替换</span>
+            <button class="dialog-close">×</button>
+        </div>
+        <div class="dialog-content">
+            <div class="form-group">
+                <label>查找内容:</label>
+                <input type="text" id="replace-find-input" class="dialog-input">
+            </div>
+            <div class="form-group">
+                <label>替换为:</label>
+                <input type="text" id="replace-with-input" class="dialog-input">
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="replace-match-case">
+                    <label for="replace-match-case">区分大小写</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="replace-wrap-around" checked>
+                    <label for="replace-wrap-around">循环</label>
+                </div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="dialog-button primary" id="replace-find">查找下一个</button>
+            <button class="dialog-button" id="replace-replace">替换</button>
+            <button class="dialog-button" id="replace-all">全部替换</button>
+            <button class="dialog-button" id="replace-cancel">取消</button>
+        </div>
+    </div>
+
+    <!-- 转到对话框 -->
+    <div class="dialog" id="goto-dialog">
+        <div class="dialog-header">
+            <span>转到指定行</span>
+            <button class="dialog-close">×</button>
+        </div>
+        <div class="dialog-content">
+            <div class="form-group">
+                <label>行号:</label>
+                <input type="number" id="goto-line-input" class="dialog-input" min="1">
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="dialog-button primary" id="goto-ok">转到</button>
+            <button class="dialog-button" id="goto-cancel">取消</button>
+        </div>
+    </div>
+
+    <!-- 字体对话框 -->
+    <div class="dialog" id="font-dialog">
+        <div class="dialog-header">
+            <span>字体</span>
+            <button class="dialog-close">×</button>
+        </div>
+        <div class="dialog-content">
+            <div class="font-selection">
+                <div class="font-group">
+                    <label>字体:</label>
+                    <select id="font-family" class="font-select">
+                        <option value="Consolas">Consolas</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Lucida Console">Lucida Console</option>
+                        <option value="Monaco">Monaco</option>
+                        <option value="monospace">monospace</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Calibri">Calibri</option>
+                        <option value="Microsoft YaHei">微软雅黑</option>
+                        <option value="SimSun">宋体</option>
+                    </select>
+                </div>
+                <div class="font-group">
+                    <label>字形:</label>
+                    <select id="font-style" class="font-select">
+                        <option value="normal">常规</option>
+                        <option value="bold">粗体</option>
+                        <option value="italic">斜体</option>
+                        <option value="bold italic">粗斜体</option>
+                    </select>
+                </div>
+                <div class="font-group">
+                    <label>大小:</label>
+                    <select id="font-size" class="font-select">
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="14">14</option>
+                        <option value="16">16</option>
+                        <option value="18">18</option>
+                        <option value="20">20</option>
+                        <option value="22">22</option>
+                        <option value="24">24</option>
+                        <option value="26">26</option>
+                        <option value="28">28</option>
+                        <option value="36">36</option>
+                        <option value="48">48</option>
+                        <option value="72">72</option>
+                    </select>
+                </div>
+            </div>
+            <div class="font-preview">
+                <label>预览:</label>
+                <div id="font-preview-text">AaBbCcXxYyZz</div>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="dialog-button primary" id="font-ok">确定</button>
+            <button class="dialog-button" id="font-cancel">取消</button>
+        </div>
+    </div>
+
+    <!-- 关于对话框 -->
+    <div class="dialog" id="about-dialog">
+        <div class="dialog-header">
+            <span>关于记事本</span>
+            <button class="dialog-close">×</button>
+        </div>
+        <div class="dialog-content">
+            <div class="about-content">
+                <div class="about-icon">📝</div>
+                <h3>记事本</h3>
+                <p>版本 1.0</p>
+                <p>© 2026 Web记事本</p>
+                <p>基于HTML、CSS和JavaScript构建的Windows 11风格记事本</p>
+            </div>
+        </div>
+        <div class="dialog-footer">
+            <button class="dialog-button primary" id="about-ok">确定</button>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="file-input" accept=".txt,.text" style="display: none;">
+
+    <script src="notepad.js"></script>
+</body>
+
+</html>
