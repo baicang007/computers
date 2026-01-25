@@ -1156,16 +1156,19 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (e.target.closest('.text-editor')) {
 			e.preventDefault();
 
+			// 移除任何现有的右键菜单
+			const existingMenu = document.querySelector('.context-menu');
+			if (existingMenu) {
+				document.body.removeChild(existingMenu);
+			}
+
 			// 创建自定义右键菜单
 			const contextMenu = document.createElement('div');
 			contextMenu.className = 'context-menu';
 			contextMenu.style.position = 'absolute';
 			contextMenu.style.left = e.pageX + 'px';
 			contextMenu.style.top = e.pageY + 'px';
-			contextMenu.style.backgroundColor = '#ffffff';
-			contextMenu.style.border = '1px solid #e1e1e1';
-			contextMenu.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-			contextMenu.style.zIndex = '2000';
+			contextMenu.style.zIndex = '1983';
 			contextMenu.style.padding = '4px 0';
 			contextMenu.style.minWidth = '150px';
 
@@ -1186,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					const separator = document.createElement('div');
 					separator.className = 'menu-separator';
 					separator.style.height = '1px';
-					separator.style.backgroundColor = '#e1e1e1';
+					separator.style.backgroundColor = '#3b3838';
 					separator.style.margin = '4px 0';
 					contextMenu.appendChild(separator);
 				} else {
@@ -1194,7 +1197,6 @@ document.addEventListener('DOMContentLoaded', () => {
 					menuItem.className = 'context-menu-item';
 					menuItem.style.padding = '6px 20px';
 					menuItem.style.fontSize = '13px';
-					menuItem.style.color = '#323130';
 					menuItem.style.cursor = 'pointer';
 					menuItem.style.transition = 'background-color 0.1s';
 					menuItem.style.display = 'flex';
@@ -1209,7 +1211,6 @@ document.addEventListener('DOMContentLoaded', () => {
 						const shortcutSpan = document.createElement('span');
 						shortcutSpan.className = 'shortcut';
 						shortcutSpan.textContent = item.shortcut;
-						shortcutSpan.style.color = '#605e5c';
 						shortcutSpan.style.fontSize = '12px';
 						menuItem.appendChild(shortcutSpan);
 					}
@@ -1229,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', () => {
 					});
 
 					menuItem.addEventListener('mouseenter', () => {
-						menuItem.style.backgroundColor = '#e1e1e1';
+						menuItem.style.backgroundColor = '#585555';
 					});
 
 					menuItem.addEventListener('mouseleave', () => {
