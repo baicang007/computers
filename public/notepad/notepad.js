@@ -12,11 +12,14 @@ class NotepadApp {
 		this.fontStyle = 'normal';
 		this.history = [];
 		this.historyIndex = -1;
-		this.maxHistorySize = 100;
+		this.maxHistorySize = 33;
 		this.showLineNumbers = false;
 		this.findText = '';
+		this.copyText = '';
 		this.findCaseSensitive = false;
 		this.findWrapAround = false;
+		this.vimMode = 'normal';
+		this.textEditor.classList.add('blue-cursor');
 
 		this.initializeElements();
 		this.bindEvents();
@@ -338,6 +341,7 @@ class NotepadApp {
 			this.historyIndex--;
 			this.textEditor.value = this.history[this.historyIndex];
 			this.updateStatus();
+			this.textEditor.focus();
 		}
 	}
 
@@ -346,6 +350,7 @@ class NotepadApp {
 			this.historyIndex++;
 			this.textEditor.value = this.history[this.historyIndex];
 			this.updateStatus();
+			this.textEditor.focus();
 		}
 	}
 
@@ -356,28 +361,22 @@ class NotepadApp {
 		const selectedText = this.textEditor.value.substring(start, end);
 
 		if (selectedText) {
-			// 将选中文本写入剪贴板
-			navigator.clipboard
-				.writeText(selectedText)
-				.then(() => {
-					// 从编辑器中删除选中文本
-					const value = this.textEditor.value;
-					this.textEditor.value = value.substring(0, start) + value.substring(end);
-					this.textEditor.selectionStart = start;
-					this.textEditor.selectionEnd = start;
+			// 存储到应用内的剪贴板
+			this.copyText = selectedText;
 
-					this.saveToHistory();
-				})
-				.catch((err) => {
-					console.error('剪切文本失败: ', err);
-					// 如果剪贴板API失败，则回退到execCommand（为了兼容性）
-					document.execCommand('cut');
-					this.saveToHistory();
-				});
-		} else {
-			// 如果没有选中文本，则尝试旧方法作为回退
-			document.execCommand('cut');
+			// 将选中文本写入系统剪贴板
+			navigator.clipboard.writeText(selectedText).catch((err) => {
+				console.error('剪切文本失败: ', err);
+			});
+			// 从编辑器中删除选中文本
+			const value = this.textEditor.value;
+			this.textEditor.value = value.substring(0, start) + value.substring(end);
+			this.textEditor.selectionStart = start;
+			this.textEditor.selectionEnd = start;
+
 			this.saveToHistory();
+			this.updateStatus();
+			this.textEditor.focus();
 		}
 	}
 
@@ -387,7 +386,10 @@ class NotepadApp {
 		const selectedText = this.textEditor.value.substring(start, end);
 
 		if (selectedText) {
-			// 复制选中文本到剪贴板
+			// 复制选中文本到应用内剪贴板
+			this.copyText = selectedText;
+
+			// 将选中文本写入系统剪贴板
 			navigator.clipboard
 				.writeText(selectedText)
 				.then(() => {
@@ -398,36 +400,38 @@ class NotepadApp {
 					// 如果剪贴板API失败，则回退到execCommand（为了兼容性）
 					document.execCommand('copy');
 				});
-		} else {
-			// 如果没有选中文本，则尝试旧方法作为回退
-			document.execCommand('copy');
 		}
 	}
 
 	paste() {
-		// 从剪贴板读取文本
-		navigator.clipboard
-			.readText()
-			.then((text) => {
-				if (text) {
-					const start = this.textEditor.selectionStart;
-					const end = this.textEditor.selectionEnd;
-					const value = this.textEditor.value;
+		if (this.copyText === '') {
+			// 如果应用内剪贴板为空，尝试从系统剪贴板读取
+			navigator.clipboard
+				.readText()
+				.then((text) => {
+					if (text) {
+						this.copyText = text;
+					}
+				})
+				.catch((err) => {
+					console.error('读取系统剪贴板文本失败: ', err);
+				});
+		}
 
-					// 在光标位置插入文本
-					this.textEditor.value = value.substring(0, start) + text + value.substring(end);
-					this.textEditor.selectionStart = start + text.length;
-					this.textEditor.selectionEnd = start + text.length;
+		if (this.copyText) {
+			const start = this.textEditor.selectionStart;
+			const end = this.textEditor.selectionEnd;
+			const value = this.textEditor.value;
 
-					this.saveToHistory();
-				}
-			})
-			.catch((err) => {
-				console.error('粘贴文本失败: ', err);
-				// 如果剪贴板API失败，则回退到execCommand（为了兼容性）
-				document.execCommand('paste');
-				this.saveToHistory();
-			});
+			// 在光标位置插入文本
+			this.textEditor.value = value.substring(0, start) + this.copyText + value.substring(end);
+			this.textEditor.selectionStart = start + this.copyText.length;
+			this.textEditor.selectionEnd = start + this.copyText.length;
+
+			this.saveToHistory();
+			this.updateStatus();
+			this.textEditor.focus();
+		}
 	}
 
 	delete() {
@@ -450,6 +454,7 @@ class NotepadApp {
 
 		this.saveToHistory();
 		this.updateStatus();
+		this.textEditor.focus();
 	}
 
 	selectAll() {
@@ -766,6 +771,7 @@ class NotepadApp {
 					this.fileName = file.name;
 					this.filePath = file.name;
 					this.isModified = false;
+					this.historyIndex = -1;
 					this.updateTitle();
 					this.saveToHistory();
 					this.updateStatus();
@@ -860,163 +866,162 @@ class NotepadApp {
 
 	// 键盘事件处理
 	handleKeyDown(e) {
-		// Ctrl+Z: 撤销
-		if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
+		// 当vim模式为普通时
+		if (this.vimMode === 'normal') {
 			e.preventDefault();
-			this.undo();
-			return;
+
+			// i键切换到插入模式
+			if (e.key === 'i') {
+				this.vimMode = 'insert';
+				this.textEditor.classList.remove('blue-cursor');
+				return;
+			}
 		}
 
-		// Ctrl+Y: 重做
-		if (e.ctrlKey && e.key === 'y') {
-			e.preventDefault();
-			this.redo();
-			return;
-		}
-
-		// Ctrl+Shift+Z: 重做
-		if (e.ctrlKey && e.shiftKey && e.key === 'Z') {
-			e.preventDefault();
-			this.redo();
-			return;
-		}
-
-		// Ctrl+N: 新建
-		if (e.ctrlKey && e.key === 'n') {
-			e.preventDefault();
-			this.newFile();
-			return;
-		}
-
-		// Ctrl+O: 打开
-		if (e.ctrlKey && e.key === 'o') {
-			e.preventDefault();
-			this.openFileDialog();
-			return;
-		}
-
-		// Ctrl+S: 保存
-		if (e.ctrlKey && e.key === 's') {
-			e.preventDefault();
-			this.saveFile();
-			return;
-		}
-
-		// Ctrl+Shift+S: 另存为
-		if (e.ctrlKey && e.shiftKey && e.key === 'S') {
-			e.preventDefault();
-			this.saveAsFile();
-			return;
-		}
-
-		// Ctrl+P: 打印
-		if (e.ctrlKey && e.key === 'p') {
-			e.preventDefault();
-			this.printFile();
-			return;
-		}
-
-		// Ctrl+F: 查找
-		if (e.ctrlKey && e.key === 'f') {
-			e.preventDefault();
-			this.showFindDialog();
-			return;
-		}
-
-		// F6: 查找下一个
-		if (e.key === 'F6') {
-			e.preventDefault();
-			this.findNext();
-			return;
-		}
-
-		// Ctrl+H: 替换
-		if (e.ctrlKey && e.key === 'h') {
-			e.preventDefault();
-			this.showReplaceDialog();
-			return;
-		}
-
-		// Ctrl+G: 转到
-		if (e.ctrlKey && e.key === 'g') {
-			e.preventDefault();
-			this.showGotoDialog();
-			return;
-		}
-
-		// Ctrl+A: 全选
-		if (e.ctrlKey && e.key === 'a') {
-			e.preventDefault();
-			this.selectAll();
-			return;
-		}
-
-		// F7: 时间/日期
-		if (e.key === 'F7') {
-			e.preventDefault();
-			this.insertTimeDate();
-			return;
-		}
-
-		// Ctrl++: 放大
-		if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
-			e.preventDefault();
-			this.zoomIn();
-			return;
-		}
-
-		// Ctrl+-: 缩小
-		if (e.ctrlKey && e.key === '-') {
-			e.preventDefault();
-			this.zoomOut();
-			return;
-		}
-
-		// Ctrl+0: 恢复默认大小
-		if (e.ctrlKey && e.key === '0') {
-			e.preventDefault();
-			this.zoomDefault();
-			return;
-		}
-
-		// Alt+F4: 退出
-		if (e.altKey && e.key === 'F4') {
-			e.preventDefault();
-			this.exit();
-			return;
-		}
-
-		// Tab键处理
-		if (e.key === 'Tab') {
-			e.preventDefault();
-			const start = this.textEditor.selectionStart;
-			const end = this.textEditor.selectionEnd;
-			const value = this.textEditor.value;
-
-			if (e.shiftKey) {
-				// Shift+Tab: 减少缩进
-				const linesBefore = value.substring(0, start).split('\n');
-				const currentLineIndex = linesBefore.length - 1;
-				const currentLine = linesBefore[currentLineIndex];
-
-				if (currentLine.startsWith('\t')) {
-					this.textEditor.value = value.substring(0, start - 1) + value.substring(start);
-					this.textEditor.selectionStart = start - 1;
-					this.textEditor.selectionEnd = end - 1;
-				} else if (currentLine.startsWith('    ')) {
-					this.textEditor.value = value.substring(0, start - 4) + value.substring(start);
-					this.textEditor.selectionStart = start - 4;
-					this.textEditor.selectionEnd = end - 4;
-				}
-			} else {
-				// Tab: 增加缩进
-				this.textEditor.value = value.substring(0, start) + '\t' + value.substring(end);
-				this.textEditor.selectionStart = start + 1;
-				this.textEditor.selectionEnd = end + 1;
+		//当vim模式为插入时
+		if (this.vimMode === 'insert') {
+			// Esc键切换回普通模式
+			if (e.key === 'Escape') {
+				e.preventDefault();
+				this.vimMode = 'normal';
+				this.textEditor.classList.add('blue-cursor');
+				return;
 			}
 
-			this.saveToHistory();
-			this.updateStatus();
+			// Ctrl+N: 新建
+			if (e.ctrlKey && e.key === 'n') {
+				e.preventDefault();
+				this.newFile();
+				return;
+			}
+
+			// Ctrl+O: 打开
+			if (e.ctrlKey && e.key === 'o') {
+				e.preventDefault();
+				this.openFileDialog();
+				return;
+			}
+
+			// Ctrl+S: 保存
+			if (e.ctrlKey && e.key === 's') {
+				e.preventDefault();
+				this.saveFile();
+				return;
+			}
+
+			// Ctrl+Shift+S: 另存为
+			if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+				e.preventDefault();
+				this.saveAsFile();
+				return;
+			}
+
+			// Ctrl+P: 打印
+			if (e.ctrlKey && e.key === 'p') {
+				e.preventDefault();
+				this.printFile();
+				return;
+			}
+
+			// Ctrl+F: 查找
+			if (e.ctrlKey && e.key === 'f') {
+				e.preventDefault();
+				this.showFindDialog();
+				return;
+			}
+
+			// F6: 查找下一个
+			if (e.key === 'F6') {
+				e.preventDefault();
+				this.findNext();
+				return;
+			}
+
+			// Ctrl+H: 替换
+			if (e.ctrlKey && e.key === 'h') {
+				e.preventDefault();
+				this.showReplaceDialog();
+				return;
+			}
+
+			// Ctrl+G: 转到
+			if (e.ctrlKey && e.key === 'g') {
+				e.preventDefault();
+				this.showGotoDialog();
+				return;
+			}
+
+			// Ctrl+A: 全选
+			if (e.ctrlKey && e.key === 'a') {
+				e.preventDefault();
+				this.selectAll();
+				return;
+			}
+
+			// F7: 时间/日期
+			if (e.key === 'F7') {
+				e.preventDefault();
+				this.insertTimeDate();
+				return;
+			}
+
+			// Ctrl++: 放大
+			if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
+				e.preventDefault();
+				this.zoomIn();
+				return;
+			}
+
+			// Ctrl+-: 缩小
+			if (e.ctrlKey && e.key === '-') {
+				e.preventDefault();
+				this.zoomOut();
+				return;
+			}
+
+			// Ctrl+0: 恢复默认大小
+			if (e.ctrlKey && e.key === '0') {
+				e.preventDefault();
+				this.zoomDefault();
+				return;
+			}
+
+			// Alt+F4: 退出
+			if (e.altKey && e.key === 'F4') {
+				e.preventDefault();
+				this.exit();
+				return;
+			}
+
+			// Tab键处理
+			if (e.key === 'Tab') {
+				e.preventDefault();
+				const start = this.textEditor.selectionStart;
+				const end = this.textEditor.selectionEnd;
+				const value = this.textEditor.value;
+
+				if (e.shiftKey) {
+					// Shift+Tab: 减少缩进
+					const linesBefore = value.substring(0, start).split('\n');
+					const currentLineIndex = linesBefore.length - 1;
+					const currentLine = linesBefore[currentLineIndex];
+
+					if (currentLine.startsWith('\t')) {
+						this.textEditor.value = value.substring(0, start - 1) + value.substring(start);
+						this.textEditor.selectionStart = start - 1;
+						this.textEditor.selectionEnd = end - 1;
+					} else if (currentLine.startsWith('    ')) {
+						this.textEditor.value = value.substring(0, start - 4) + value.substring(start);
+						this.textEditor.selectionStart = start - 4;
+						this.textEditor.selectionEnd = end - 4;
+					}
+				} else {
+					// Tab: 增加缩进
+					this.textEditor.value = value.substring(0, start) + '\t' + value.substring(end);
+					this.textEditor.selectionStart = start + 1;
+					this.textEditor.selectionEnd = end + 1;
+				}
+			}
 		}
 	}
 
@@ -1032,7 +1037,7 @@ class NotepadApp {
 
 		// 更新状态栏
 		this.statusBar.lineColumn.textContent = `第 ${lineNumber} 行，第 ${columnNumber} 列`;
-		this.statusBar.charCount.textContent = `${text.length} 个字符`;
+		this.statusBar.charCount.textContent = `第 ${cursorPos} / ${text.length} 个字符`;
 
 		// 更新菜单状态
 		this.updateMenuState();
@@ -1148,112 +1153,6 @@ document.addEventListener('DOMContentLoaded', () => {
 			document.querySelectorAll('.menu-item').forEach((item) => {
 				item.classList.remove('active');
 			});
-		}
-	});
-
-	// 阻止右键菜单
-	document.addEventListener('contextmenu', (e) => {
-		if (e.target.closest('.text-editor')) {
-			e.preventDefault();
-
-			// 移除任何现有的右键菜单
-			const existingMenu = document.querySelector('.context-menu');
-			if (existingMenu) {
-				document.body.removeChild(existingMenu);
-			}
-
-			// 创建自定义右键菜单
-			const contextMenu = document.createElement('div');
-			contextMenu.className = 'context-menu';
-			contextMenu.style.position = 'absolute';
-			contextMenu.style.left = e.pageX + 'px';
-			contextMenu.style.top = e.pageY + 'px';
-			contextMenu.style.zIndex = '1983';
-			contextMenu.style.padding = '4px 0';
-			contextMenu.style.minWidth = '150px';
-
-			const menuItems = [
-				{ text: '撤销', action: 'undo', shortcut: 'Ctrl+Z' },
-				{ text: '重做', action: 'redo', shortcut: 'Ctrl+Y' },
-				{ separator: true },
-				{ text: '剪切', action: 'cut', shortcut: 'Ctrl+X' },
-				{ text: '复制', action: 'copy', shortcut: 'Ctrl+C' },
-				{ text: '粘贴', action: 'paste', shortcut: 'Ctrl+V' },
-				{ text: '删除', action: 'delete', shortcut: 'Del' },
-				{ separator: true },
-				{ text: '全选', action: 'select-all', shortcut: 'Ctrl+A' },
-			];
-
-			menuItems.forEach((item) => {
-				if (item.separator) {
-					const separator = document.createElement('div');
-					separator.className = 'menu-separator';
-					separator.style.height = '1px';
-					separator.style.backgroundColor = '#3b3838';
-					separator.style.margin = '4px 0';
-					contextMenu.appendChild(separator);
-				} else {
-					const menuItem = document.createElement('div');
-					menuItem.className = 'context-menu-item';
-					menuItem.style.padding = '6px 20px';
-					menuItem.style.fontSize = '13px';
-					menuItem.style.cursor = 'pointer';
-					menuItem.style.transition = 'background-color 0.1s';
-					menuItem.style.display = 'flex';
-					menuItem.style.justifyContent = 'space-between';
-					menuItem.style.alignItems = 'center';
-
-					const textSpan = document.createElement('span');
-					textSpan.textContent = item.text;
-					menuItem.appendChild(textSpan);
-
-					if (item.shortcut) {
-						const shortcutSpan = document.createElement('span');
-						shortcutSpan.className = 'shortcut';
-						shortcutSpan.textContent = item.shortcut;
-						shortcutSpan.style.fontSize = '12px';
-						menuItem.appendChild(shortcutSpan);
-					}
-
-					// 修改右键菜单部分的事件处理
-					menuItem.addEventListener('click', () => {
-						// 创建一个完整的模拟事件对象，包含必要的方法
-						const mockEvent = {
-							preventDefault: () => {},
-							stopPropagation: () => {},
-							currentTarget: {
-								dataset: { action: item.action },
-							},
-						};
-						app.handleMenuAction(mockEvent);
-						document.body.removeChild(contextMenu);
-					});
-
-					menuItem.addEventListener('mouseenter', () => {
-						menuItem.style.backgroundColor = '#585555';
-					});
-
-					menuItem.addEventListener('mouseleave', () => {
-						menuItem.style.backgroundColor = 'transparent';
-					});
-
-					contextMenu.appendChild(menuItem);
-				}
-			});
-
-			document.body.appendChild(contextMenu);
-
-			// 点击其他地方关闭右键菜单
-			const closeContextMenu = (e) => {
-				if (!contextMenu.contains(e.target)) {
-					document.body.removeChild(contextMenu);
-					document.removeEventListener('click', closeContextMenu);
-				}
-			};
-
-			setTimeout(() => {
-				document.addEventListener('click', closeContextMenu);
-			}, 0);
 		}
 	});
 });

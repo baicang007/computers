@@ -31,6 +31,9 @@ body {
 	flex-direction: column;
 	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+.blue-cursor {
+	caret-color: #0066ff;
+}
 
 /* 标题栏 */
 .title-bar {
