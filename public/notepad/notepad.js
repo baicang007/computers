@@ -18,8 +18,8 @@ class NotepadApp {
 		this.copyText = '';
 		this.findCaseSensitive = false;
 		this.findWrapAround = false;
-		this.vimMode = 'normal';
-		this.textEditor.classList.add('blue-cursor');
+		this.vimMode = 'insert'; // 默认插入模式
+		this.stepTimes = '';
 
 		this.initializeElements();
 		this.bindEvents();
@@ -256,6 +256,7 @@ class NotepadApp {
 		this.fileName = '无标题';
 		this.filePath = null;
 		this.isModified = false;
+		this.historyIndex = -1;
 		this.updateTitle();
 		this.saveToHistory();
 		this.updateStatus();
@@ -275,6 +276,7 @@ class NotepadApp {
 			this.fileName = file.name;
 			this.filePath = file.name;
 			this.isModified = false;
+			this.historyIndex = -1;
 			this.updateTitle();
 			this.saveToHistory();
 			this.updateStatus();
@@ -339,18 +341,26 @@ class NotepadApp {
 	undo() {
 		if (this.historyIndex > 0) {
 			this.historyIndex--;
+			//获取当前光标位置
+			const cursorPosition = this.textEditor.selectionStart;
 			this.textEditor.value = this.history[this.historyIndex];
+			// 恢复光标位置
+			this.textEditor.selectionStart = cursorPosition;
+			this.textEditor.selectionEnd = cursorPosition;
 			this.updateStatus();
-			this.textEditor.focus();
 		}
 	}
 
 	redo() {
 		if (this.historyIndex < this.history.length - 1) {
 			this.historyIndex++;
+			//获取当前光标位置
+			const cursorPosition = this.textEditor.selectionStart;
 			this.textEditor.value = this.history[this.historyIndex];
+			// 恢复光标位置
+			this.textEditor.selectionStart = cursorPosition;
+			this.textEditor.selectionEnd = cursorPosition;
 			this.updateStatus();
-			this.textEditor.focus();
 		}
 	}
 
@@ -376,7 +386,6 @@ class NotepadApp {
 
 			this.saveToHistory();
 			this.updateStatus();
-			this.textEditor.focus();
 		}
 	}
 
@@ -430,7 +439,6 @@ class NotepadApp {
 
 			this.saveToHistory();
 			this.updateStatus();
-			this.textEditor.focus();
 		}
 	}
 
@@ -454,7 +462,6 @@ class NotepadApp {
 
 		this.saveToHistory();
 		this.updateStatus();
-		this.textEditor.focus();
 	}
 
 	selectAll() {
@@ -553,7 +560,6 @@ class NotepadApp {
 			this.textEditor.selectionEnd = start + replaceText.length;
 			this.saveToHistory();
 			this.updateStatus();
-			this.textEditor.focus();
 		} else {
 			alert('！请先点击---查找下一个');
 		}
@@ -584,7 +590,6 @@ class NotepadApp {
 			this.saveToHistory();
 			this.updateStatus();
 		}
-		this.textEditor.focus();
 	}
 
 	// 转到行
@@ -821,7 +826,6 @@ class NotepadApp {
 	// 文本变化处理
 	handleTextChange() {
 		this.isModified = true;
-		this.updateTitle();
 		this.saveToHistory();
 		this.updateStatus();
 	}
@@ -843,7 +847,7 @@ class NotepadApp {
 			paste: 'Ctrl+V',
 			delete: 'Del',
 			find: 'Ctrl+F',
-			'find-next': 'F6',
+			'find-next': 'F3',
 			replace: 'Ctrl+H',
 			goto: 'Ctrl+G',
 			'select-all': 'Ctrl+A',
@@ -864,27 +868,163 @@ class NotepadApp {
 		}
 	}
 
+	// 计算并返回当前行号
+	getCurrentLineNumber() {
+		const pos = this.textEditor.selectionStart;
+		const lines = this.textEditor.value.substring(0, pos).split('\n');
+		return lines.length;
+	}
+
+	// 计算并返回当前列号
+	getCurrentColumnNumber() {
+		const pos = this.textEditor.selectionStart;
+		const lines = this.textEditor.value.substring(0, pos).split('\n');
+		return lines[lines.length - 1].length + 1;
+	}
+
+	// 计算并返回最后一行的行号
+	getLastLineNumber() {
+		const lines = this.textEditor.value.split('\n');
+		return lines.length;
+	}
+
+	// 跳到开头
+	goToStart() {
+		this.textEditor.selectionStart = 0;
+		this.textEditor.selectionEnd = 0;
+	}
+	// 跳到最后
+	goToEnd() {
+		this.textEditor.selectionStart = this.textEditor.value.length - 1;
+		this.textEditor.selectionEnd = this.textEditor.selectionStart;
+	}
+
+	// 光标移动函数
+	moveCursorToLeft(times) {
+		const pos = this.textEditor.selectionStart;
+		this.textEditor.selectionStart = Math.max(0, pos - times);
+		this.textEditor.selectionEnd = this.textEditor.selectionStart;
+	}
+
+	moveCursorToRight(times) {
+		const pos = this.textEditor.selectionStart;
+		this.textEditor.selectionStart = Math.min(this.textEditor.value.length, pos + times);
+		this.textEditor.selectionEnd = this.textEditor.selectionStart;
+	}
+
+	moveCursorToUpLine(times) {
+		// 计算当前行号和列号
+		const pos = this.textEditor.selectionStart;
+		const lines = this.textEditor.value.substring(0, pos).split('\n');
+		const lineNumber = lines.length;
+		if (lineNumber === 1) {
+			this.goToEnd();
+			return;
+		}
+		const columnNumber = lines[lines.length - 1].length + 1;
+		// 计算目标行号和列号
+		const targetLineNumber = Math.max(1, lineNumber - times);
+		const targetColumnNumber = Math.min(lines[targetLineNumber - 1].length + 1, columnNumber);
+		// 计算目标位置
+		if (targetLineNumber === 1) {
+			this.textEditor.selectionStart = targetColumnNumber - 1;
+			this.textEditor.selectionEnd = this.textEditor.selectionStart;
+		} else {
+			let targetPos = 0;
+			for (let i = 0; i < targetLineNumber - 1; i++) {
+				targetPos += lines[i].length + 1;
+			}
+			targetPos += targetColumnNumber - 1;
+			this.textEditor.selectionStart = targetPos;
+			this.textEditor.selectionEnd = this.textEditor.selectionStart;
+		}
+	}
+
+	moveCursorToDownLine(times) {
+		// 计算当前行号和列号
+		const pos = this.textEditor.selectionStart;
+		const lines = this.textEditor.value.substring(0, pos).split('\n');
+		const lineNumber = lines.length;
+		const columnNumber = lines[lines.length - 1].length + 1;
+		// 计算目标行号和列号
+		let allLines = this.textEditor.value.split('\n');
+		const targetLineNumber = Math.min(allLines.length, lineNumber + times);
+		const targetColumnNumber = Math.min(allLines[targetLineNumber - 1].length + 1, columnNumber);
+		// 计算目标位置
+		if (targetLineNumber === lineNumber) {
+			this.goToStart();
+			return;
+		} else {
+			let targetPos = 0;
+			for (let i = 0; i < targetLineNumber - 1; i++) {
+				targetPos += allLines[i].length + 1;
+			}
+			targetPos += targetColumnNumber - 1;
+			this.textEditor.selectionStart = targetPos;
+			this.textEditor.selectionEnd = this.textEditor.selectionStart;
+		}
+	}
+
 	// 键盘事件处理
 	handleKeyDown(e) {
 		// 当vim模式为普通时
 		if (this.vimMode === 'normal') {
+			// 阻止默认行为
 			e.preventDefault();
 
 			// i键切换到插入模式
 			if (e.key === 'i') {
 				this.vimMode = 'insert';
-				this.textEditor.classList.remove('blue-cursor');
+				this.textEditor.classList.remove('normal-color-cursor');
+				return;
+			}
+
+			// 按下数字键记录次数
+			if (e.key >= '0' && e.key <= '9') {
+				this.stepTimes += e.key;
+				return;
+			}
+
+			// h键左移或左方向键
+			if (e.key === 'h' || e.key === 'ArrowLeft') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				this.moveCursorToLeft(times);
+				this.stepTimes = '';
+				return;
+			}
+
+			// l键右移或右方向键
+			if (e.key === 'l' || e.key === 'ArrowRight') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				this.moveCursorToRight(times);
+				this.stepTimes = '';
+				return;
+			}
+
+			// k键上移或上方向键
+			if (e.key === 'k' || e.key === 'ArrowUp') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				this.moveCursorToUpLine(times);
+				this.stepTimes = '';
+				return;
+			}
+
+			// j键下移或下方向键
+			if (e.key === 'j' || e.key === 'ArrowDown') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				this.moveCursorToDownLine(times);
+				this.stepTimes = '';
 				return;
 			}
 		}
 
-		//当vim模式为插入时
+		// 当vim模式为插入时
 		if (this.vimMode === 'insert') {
 			// Esc键切换回普通模式
 			if (e.key === 'Escape') {
 				e.preventDefault();
 				this.vimMode = 'normal';
-				this.textEditor.classList.add('blue-cursor');
+				this.textEditor.classList.add('normal-color-cursor');
 				return;
 			}
 
@@ -913,34 +1053,6 @@ class NotepadApp {
 			if (e.ctrlKey && e.shiftKey && e.key === 'S') {
 				e.preventDefault();
 				this.saveAsFile();
-				return;
-			}
-
-			// Ctrl+P: 打印
-			if (e.ctrlKey && e.key === 'p') {
-				e.preventDefault();
-				this.printFile();
-				return;
-			}
-
-			// Ctrl+F: 查找
-			if (e.ctrlKey && e.key === 'f') {
-				e.preventDefault();
-				this.showFindDialog();
-				return;
-			}
-
-			// F6: 查找下一个
-			if (e.key === 'F6') {
-				e.preventDefault();
-				this.findNext();
-				return;
-			}
-
-			// Ctrl+H: 替换
-			if (e.ctrlKey && e.key === 'h') {
-				e.preventDefault();
-				this.showReplaceDialog();
 				return;
 			}
 
@@ -1041,10 +1153,21 @@ class NotepadApp {
 
 		// 更新菜单状态
 		this.updateMenuState();
+		this.textEditor.focus();
+
+		// 普通模式下，选中一个字符作为光标显示
+		if (this.vimMode === 'normal') {
+			this.textEditor.selectionStart = cursorPos;
+			this.textEditor.selectionEnd = cursorPos + 1;
+		}
+		// 插入模式下，取消选中
+		if (this.vimMode === 'insert') {
+			this.textEditor.selectionStart = cursorPos;
+			this.textEditor.selectionEnd = cursorPos;
+		}
 	}
 
 	updateMenuState() {
-		const hasText = this.textEditor.value.length > 0;
 		const hasSelection = this.textEditor.selectionStart !== this.textEditor.selectionEnd;
 		const canUndo = this.historyIndex > 0;
 		const canRedo = this.historyIndex < this.history.length - 1;
