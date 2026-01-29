@@ -408,7 +408,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			closeMenu();
-			window.open('./player/tvideo.html', '_blank');
+			window.open('./player/index.html', '_blank');
 		});
 	}
 
@@ -418,7 +418,7 @@
 			e.preventDefault();
 			e.stopPropagation();
 			closeMenu();
-			window.open('./notepad/notepad.html', '_blank');
+			window.open('./notepad/index.html', '_blank');
 		});
 	}
 
