@@ -21,6 +21,7 @@ class NotepadApp {
 		this.vimMode = 'insert'; // 默认插入模式
 		this.stepTimes = '';
 		this.lastKey = '';
+		this.holdPos = 0;
 
 		this.initializeElements();
 		this.bindEvents();
@@ -864,16 +865,14 @@ class NotepadApp {
 		}
 	}
 
-	// 计算并返回当前行号
-	getCurrentLineNumber() {
-		const pos = this.textEditor.selectionStart;
+	// 计算并返回给定位置的行号
+	getLineNumber(pos) {
 		const lines = this.textEditor.value.substring(0, pos).split('\n');
 		return lines.length;
 	}
 
-	// 计算并返回当前列号
-	getCurrentColumnNumber() {
-		const pos = this.textEditor.selectionStart;
+	// 计算并返回给定位置的列号
+	getCoumnNumber(pos) {
 		const lines = this.textEditor.value.substring(0, pos).split('\n');
 		let columnNumber = lines[lines.length - 1].length;
 		return columnNumber + 1;
@@ -890,6 +889,32 @@ class NotepadApp {
 		return targetPos;
 	}
 
+	// 计算并返回给定行号的行首位置
+	getLineStartPos(lineNumber) {
+		const lines = this.textEditor.value.split('\n');
+		if (lineNumber < 1 || lineNumber > lines.length) {
+			return -1;
+		}
+		let targetPos = 0;
+		for (let i = 0; i < lineNumber - 1; i++) {
+			targetPos += lines[i].length + 1;
+		}
+		return targetPos;
+	}
+
+	// 计算并返回给定行号的行尾位置
+	getLineEndPos(lineNumber) {
+		const lines = this.textEditor.value.split('\n');
+		if (lineNumber < 1 || lineNumber > lines.length) {
+			return -1;
+		}
+		let targetPos = 0;
+		for (let i = 0; i < lineNumber - 1; i++) {
+			targetPos += lines[i].length + 1;
+		}
+		return targetPos + lines[lineNumber - 1].length;
+	}
+
 	// 跳到开头
 	goToStart() {
 		this.textEditor.selectionStart = 0;
@@ -901,42 +926,67 @@ class NotepadApp {
 		this.textEditor.selectionEnd = this.textEditor.selectionStart;
 	}
 
-	// 剪切当前行
-	cutCurrentLine() {
+	// 复制行
+	copyLines(times) {
 		const lines = this.textEditor.value.split('\n');
-		const currentLineNumber = this.getCurrentLineNumber();
-		const currentColumnNumber = this.getCurrentColumnNumber();
-		const currentLine = lines[currentLineNumber - 1];
+		const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+		let copyedLines = '';
+		for (let i = 0; i < times; i++) {
+			const currentLine = lines[currentLineNumber - 1 + i] + '\n';
+			copyedLines += currentLine;
+		}
+		this.syncToClipboard(copyedLines);
+	}
+
+	// 剪切行
+	cutLines(times) {
+		let cuttedLines = '';
+		for (let i = 0; i < times; i++) {
+			const lines = this.textEditor.value.split('\n');
+			const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+			const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionStart);
+			const currentLine = lines[currentLineNumber - 1] + '\n';
+			cuttedLines += currentLine;
+			// 删除当前行
+			lines.splice(currentLineNumber - 1, 1);
+			this.textEditor.value = lines.join('\n');
+			// 把光标移动到原来行号和列号对应的位置
+			const newPosition = this.getPositionFromLineColumn(currentLineNumber, currentColumnNumber);
+			this.textEditor.selectionStart = newPosition;
+			this.textEditor.selectionEnd = newPosition;
+		}
 		// 把当前行内容存到剪贴板
-		this.syncToClipboard(currentLine);
-		// 删除当前行
-		lines.splice(currentLineNumber - 1, 1);
-		this.textEditor.value = lines.join('\n');
-		// 把光标移动到原来行号和列号对应的位置
-		const newPosition = this.getPositionFromLineColumn(currentLineNumber, currentColumnNumber);
-		this.textEditor.selectionStart = newPosition;
-		this.textEditor.selectionEnd = newPosition;
+		this.syncToClipboard(cuttedLines);
+		this.saveToHistory();
+	}
+
+	// 插入一行，把应用剪切板中的内容插入到当前行的下方
+	insertLine() {
+		let insertPos = this.textEditor.selectionStart;
+		const value = this.textEditor.value;
+		const currentLineNumber = this.getLineNumber(insertPos);
+		insertPos = this.getLineEndPos(currentLineNumber) + 1;
+		// 把应用剪切板中的内容插入到当前行的下方
+		this.textEditor.value = value.slice(0, insertPos) + this.copyText + value.slice(insertPos);
+		// 把光标移动到对应的位置
+		this.textEditor.selectionStart = insertPos;
+		this.textEditor.selectionEnd = insertPos;
 		this.saveToHistory();
 	}
 
 	// 返回光标移动后的位置函数
-	moveCursorToLeft(times) {
-		const pos = this.textEditor.selectionStart;
+	moveCursorToLeft(times, pos) {
 		return Math.max(0, pos - times);
 	}
 
-	moveCursorToRight(times) {
-		const pos = this.textEditor.selectionStart;
+	moveCursorToRight(times, pos) {
 		return Math.min(this.textEditor.value.length, pos + times);
 	}
 
-	moveCursorToUpLine(times) {
-		// 计算当前行号和列号
-		const lineNumber = this.getCurrentLineNumber();
+	moveCursorToUpLine(times, lineNumber, columnNumber) {
 		if (lineNumber === 1) {
 			return this.textEditor.value.length;
 		}
-		const columnNumber = this.getCurrentColumnNumber();
 		// 计算目标行号和列号
 		let allLines = this.textEditor.value.split('\n');
 		const targetLineNumber = Math.max(1, lineNumber - times);
@@ -950,10 +1000,7 @@ class NotepadApp {
 		}
 	}
 
-	moveCursorToDownLine(times) {
-		// 计算当前行号和列号
-		const lineNumber = this.getCurrentLineNumber();
-		const columnNumber = this.getCurrentColumnNumber();
+	moveCursorToDownLine(times, lineNumber, columnNumber) {
 		// 计算目标行号和列号
 		let allLines = this.textEditor.value.split('\n');
 		const targetLineNumber = Math.min(allLines.length, lineNumber + times);
@@ -986,6 +1033,7 @@ class NotepadApp {
 			if (e.key === 'v') {
 				this.vimMode = 'visual';
 				this.statusBar.vimModeStatus.textContent = '可视模式';
+				this.holdPos = this.textEditor.selectionStart;
 				return;
 			}
 
@@ -995,26 +1043,102 @@ class NotepadApp {
 				return;
 			}
 
+			// gg跳到文件开头
+			if (e.key === 'g') {
+				if (this.lastKey === 'g') {
+					this.goToStart();
+					this.lastKey = '';
+					return;
+				} else {
+					this.lastKey = 'g';
+					return;
+				}
+			}
+
+			// ge跳到文件结尾
+			if (e.key === 'e') {
+				if (this.lastKey === 'g') {
+					this.goToEnd();
+					this.lastKey = '';
+					return;
+				}
+			}
+
+			// G跳到文件结尾
+			if (e.key === 'G') {
+				this.goToEnd();
+				return;
+			}
+
+			// ga跳到行首
+			if (e.key === 'a') {
+				if (this.lastKey === 'g') {
+					let lineStartPos = this.getLineStartPos(this.getLineNumber(this.textEditor.selectionStart));
+					this.textEditor.selectionStart = lineStartPos;
+					this.textEditor.selectionEnd = lineStartPos;
+					this.lastKey = '';
+					return;
+				}
+			}
+
+			// gz跳到行尾
+			if (e.key === 'z') {
+				if (this.lastKey === 'g') {
+					let lineEndPos = this.getLineEndPos(this.getLineNumber(this.textEditor.selectionStart));
+					this.textEditor.selectionStart = lineEndPos;
+					this.textEditor.selectionEnd = lineEndPos;
+					this.lastKey = '';
+					return;
+				}
+			}
+
+			// y复制字符，yy复制行
+			if (e.key === 'y') {
+				if (this.lastKey === 'y') {
+					let times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+					// 判断times是否大于剩余行数
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+					const lines = this.textEditor.value.split('\n');
+					times = Math.min(times, lines.length - currentLineNumber + 1);
+					this.copyLines(times);
+					this.stepTimes = '';
+					this.lastKey = '';
+					return;
+				} else {
+					this.lastKey = 'y';
+					return;
+				}
+			}
+
 			// dd剪切当前行
 			if (e.key === 'd') {
 				if (this.lastKey === 'd') {
-					if (this.stepTimes) {
-						const times = parseInt(this.stepTimes);
-						for (let i = 0; i < times; i++) {
-							this.cutCurrentLine();
-						}
-						this.stepTimes = '';
-						this.lastKey = '';
-						return;
-					} else {
-						this.cutCurrentLine();
-						this.lastKey = '';
-						return;
-					}
+					let times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+					// 判断times是否大于剩余行数
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+					const lines = this.textEditor.value.split('\n');
+					times = Math.min(times, lines.length - currentLineNumber + 1);
+					this.cutLines(times);
+					this.stepTimes = '';
+					this.lastKey = '';
+					return;
 				} else {
 					this.lastKey = 'd';
 					return;
 				}
+			}
+
+			// p键粘贴
+			if (e.key === 'p') {
+				// 当copyText中的内容以换行符结尾时，插入新行
+				if (this.copyText.endsWith('\n')) {
+					this.insertLine();
+					return;
+				}
+				// 否则在光标位置粘贴
+				this.textEditor.selectionEnd = this.textEditor.selectionStart;
+				this.paste();
+				return;
 			}
 
 			// u键撤销最近一次操作
@@ -1029,7 +1153,7 @@ class NotepadApp {
 			// h键左移或左方向键
 			if (e.key === 'h' || e.key === 'ArrowLeft') {
 				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
-				const newPos = this.moveCursorToLeft(times);
+				const newPos = this.moveCursorToLeft(times, this.textEditor.selectionStart);
 				this.textEditor.selectionStart = newPos;
 				this.textEditor.selectionEnd = newPos;
 				this.stepTimes = '';
@@ -1039,7 +1163,7 @@ class NotepadApp {
 			// l键右移或右方向键
 			if (e.key === 'l' || e.key === 'ArrowRight') {
 				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
-				const newPos = this.moveCursorToRight(times);
+				const newPos = this.moveCursorToRight(times, this.textEditor.selectionStart);
 				this.textEditor.selectionStart = newPos;
 				this.textEditor.selectionEnd = newPos;
 				this.stepTimes = '';
@@ -1048,8 +1172,10 @@ class NotepadApp {
 
 			// k键上移或上方向键
 			if (e.key === 'k' || e.key === 'ArrowUp') {
+				const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+				const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionStart);
 				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
-				const newPos = this.moveCursorToUpLine(times);
+				const newPos = this.moveCursorToUpLine(times, currentLineNumber, currentColumnNumber);
 				this.textEditor.selectionStart = newPos;
 				this.textEditor.selectionEnd = newPos;
 				this.stepTimes = '';
@@ -1058,8 +1184,10 @@ class NotepadApp {
 
 			// j键下移或下方向键
 			if (e.key === 'j' || e.key === 'ArrowDown') {
+				const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+				const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionStart);
 				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
-				const newPos = this.moveCursorToDownLine(times);
+				const newPos = this.moveCursorToDownLine(times, currentLineNumber, currentColumnNumber);
 				this.textEditor.selectionStart = newPos;
 				this.textEditor.selectionEnd = newPos;
 				this.stepTimes = '';
@@ -1082,6 +1210,94 @@ class NotepadApp {
 			// 按下数字键记录次数
 			if (e.key >= '0' && e.key <= '9') {
 				this.stepTimes += e.key;
+				return;
+			}
+
+			// h键左移或左方向键
+			if (e.key === 'h' || e.key === 'ArrowLeft') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				if (this.textEditor.selectionEnd > this.holdPos) {
+					const newPos = this.moveCursorToLeft(times, this.textEditor.selectionEnd);
+					this.textEditor.selectionEnd = newPos < this.holdPos ? this.holdPos : newPos;
+				} else {
+					const newPos = this.moveCursorToLeft(times, this.textEditor.selectionStart);
+					this.textEditor.selectionStart = newPos;
+				}
+				this.stepTimes = '';
+				return;
+			}
+
+			// l键右移或右方向键
+			if (e.key === 'l' || e.key === 'ArrowRight') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				if (this.textEditor.selectionStart < this.holdPos) {
+					const newPos = this.moveCursorToRight(times, this.textEditor.selectionStart);
+					this.textEditor.selectionStart = newPos > this.holdPos ? this.holdPos : newPos;
+				} else {
+					const newPos = this.moveCursorToRight(times, this.textEditor.selectionEnd);
+					this.textEditor.selectionEnd = newPos;
+				}
+				this.stepTimes = '';
+				return;
+			}
+
+			// k键上移或上方向键
+			if (e.key === 'k' || e.key === 'ArrowUp') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				if (this.textEditor.selectionEnd > this.holdPos) {
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionEnd);
+					const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionEnd);
+					const newPos = this.moveCursorToUpLine(times, currentLineNumber, currentColumnNumber);
+					this.textEditor.selectionEnd = newPos < this.holdPos ? this.holdPos : newPos;
+				} else {
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+					const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionStart);
+					const newPos = this.moveCursorToUpLine(times, currentLineNumber, currentColumnNumber);
+					this.textEditor.selectionStart = newPos;
+				}
+				this.stepTimes = '';
+				return;
+			}
+
+			// j键下移或下方向键
+			if (e.key === 'j' || e.key === 'ArrowDown') {
+				const times = this.stepTimes ? parseInt(this.stepTimes) : 1;
+				if (this.textEditor.selectionStart < this.holdPos) {
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionStart);
+					const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionStart);
+					const newPos = this.moveCursorToDownLine(times, currentLineNumber, currentColumnNumber);
+					this.textEditor.selectionStart = newPos > this.holdPos ? this.holdPos : newPos;
+				} else {
+					const currentLineNumber = this.getLineNumber(this.textEditor.selectionEnd);
+					const currentColumnNumber = this.getCoumnNumber(this.textEditor.selectionEnd);
+					const newPos = this.moveCursorToDownLine(times, currentLineNumber, currentColumnNumber);
+					this.textEditor.selectionEnd = newPos;
+				}
+				this.stepTimes = '';
+				return;
+			}
+
+			// d键剪切选中文本并切换回普通模式
+			if (e.key === 'd') {
+				this.cut();
+				this.vimMode = 'normal';
+				this.statusBar.vimModeStatus.textContent = '普通模式';
+				return;
+			}
+
+			// y键复制选中文本并切换回普通模式
+			if (e.key === 'y') {
+				this.copy();
+				this.vimMode = 'normal';
+				this.statusBar.vimModeStatus.textContent = '普通模式';
+				return;
+			}
+
+			// p键粘贴替换掉选中文本并切换回普通模式
+			if (e.key === 'p') {
+				this.paste();
+				this.vimMode = 'normal';
+				this.statusBar.vimModeStatus.textContent = '普通模式';
 				return;
 			}
 		}
@@ -1210,6 +1426,7 @@ class NotepadApp {
 	updateStatus() {
 		const text = this.textEditor.value;
 		const cursorPos = this.textEditor.selectionStart;
+		const cursorEnd = this.textEditor.selectionEnd;
 
 		// 计算行号和列号
 		const lines = text.substring(0, cursorPos).split('\n');
@@ -1234,6 +1451,12 @@ class NotepadApp {
 		if (this.vimMode === 'insert') {
 			this.textEditor.selectionStart = cursorPos;
 			this.textEditor.selectionEnd = cursorPos;
+		}
+		// 可视模式下，保持选中状态不变
+		if (this.vimMode === 'visual') {
+			this.textEditor.selectionStart = cursorPos;
+			this.textEditor.selectionEnd = cursorEnd;
+			console.log('visual mode selection:', cursorPos, cursorEnd);
 		}
 	}
 
