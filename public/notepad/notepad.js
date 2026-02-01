@@ -17,7 +17,7 @@ class NotepadApp {
 		this.findText = '';
 		this.copyText = '';
 		this.findCaseSensitive = false;
-		this.findWrapAround = false;
+		this.findWrapAround = true;
 		this.vimMode = 'insert'; // 默认插入模式
 		this.stepTimes = '';
 		this.lastKey = '';
@@ -419,11 +419,6 @@ class NotepadApp {
 	}
 
 	paste() {
-		if (this.copyText === '') {
-			// 如果应用内剪贴板为空，尝试从系统剪贴板读取
-			this.syncFromClipboard();
-		}
-
 		if (this.copyText) {
 			const start = this.textEditor.selectionStart;
 			const end = this.textEditor.selectionEnd;
@@ -960,18 +955,27 @@ class NotepadApp {
 		this.saveToHistory();
 	}
 
-	// 插入一行，把应用剪切板中的内容插入到当前行的下方
-	insertLine() {
-		let insertPos = this.textEditor.selectionStart;
-		const value = this.textEditor.value;
-		const currentLineNumber = this.getLineNumber(insertPos);
-		insertPos = this.getLineEndPos(currentLineNumber) + 1;
-		// 把应用剪切板中的内容插入到当前行的下方
-		this.textEditor.value = value.slice(0, insertPos) + this.copyText + value.slice(insertPos);
-		// 把光标移动到对应的位置
-		this.textEditor.selectionStart = insertPos;
-		this.textEditor.selectionEnd = insertPos;
-		this.saveToHistory();
+	// 插入空行
+	insertEmptyLine() {
+		this.copyText = '\n';
+		this.insertLineText();
+	}
+
+	// 把应用剪切板中的内容插入到当前行的下方
+	insertLineText() {
+		if (this.copyText) {
+			// 计算插入位置
+			let insertPos = this.textEditor.selectionStart;
+			const value = this.textEditor.value;
+			const currentLineNumber = this.getLineNumber(insertPos);
+			insertPos = this.getLineEndPos(currentLineNumber) + 1;
+			// 把应用剪切板中的内容插入到当前行的下方
+			this.textEditor.value = value.slice(0, insertPos) + this.copyText + value.slice(insertPos);
+			// 把光标移动到对应的位置
+			this.textEditor.selectionStart = insertPos;
+			this.textEditor.selectionEnd = insertPos;
+			this.saveToHistory();
+		}
 	}
 
 	// 返回光标移动后的位置函数
@@ -1021,6 +1025,19 @@ class NotepadApp {
 			// 阻止默认行为
 			e.preventDefault();
 
+			if (this.lastKey === 'f') {
+				// 如果按下的是字符或数字键，记录字符
+				if ((e.key >= 'a' && e.key <= 'z') || (e.key >= '0' && e.key <= '9')) {
+					this.findText = e.key;
+					this.findNext();
+					this.lastKey = '';
+					return;
+				}
+				// console.log(e.key);
+				this.lastKey = '';
+				return;
+			}
+
 			// i键切换到插入模式
 			if (e.key === 'i') {
 				this.vimMode = 'insert';
@@ -1037,6 +1054,47 @@ class NotepadApp {
 				return;
 			}
 
+			if (e.key === 'f') {
+				this.lastKey = 'f';
+				return;
+			}
+
+			if (e.key === 'n') {
+				this.findNext();
+				return;
+			}
+
+			// w键跳到下一个单词开头
+			if (e.key === 'w') {
+				const findTextlist = this.textEditor.value.slice(this.textEditor.selectionEnd).split(/\s+/);
+				if (findTextlist.length > 1) {
+					this.findText = findTextlist[1];
+					const nextWordPos = this.textEditor.value.indexOf(this.findText, this.textEditor.selectionEnd);
+					this.textEditor.selectionStart = nextWordPos;
+					this.textEditor.selectionEnd = nextWordPos;
+				} else {
+					// 如果没有下一个单词，跳到文件结尾
+					this.goToEnd();
+				}
+				return;
+			}
+
+			// b键跳到上一个单词开头
+			if (e.key === 'b') {
+				const textBeforeCursor = this.textEditor.value.slice(0, this.textEditor.selectionStart);
+				const words = textBeforeCursor.split(/\s+/);
+				if (words.length > 1) {
+					this.findText = words[words.length - 2];
+					const prevWordPos = textBeforeCursor.lastIndexOf(this.findText);
+					this.textEditor.selectionStart = prevWordPos;
+					this.textEditor.selectionEnd = prevWordPos;
+				} else {
+					// 如果没有上一个单词，跳到文件开头
+					this.goToStart();
+				}
+				return;
+			}
+
 			// 按下数字键记录次数
 			if (e.key >= '0' && e.key <= '9') {
 				this.stepTimes += e.key;
@@ -1048,6 +1106,17 @@ class NotepadApp {
 				if (this.lastKey === 'g') {
 					this.goToStart();
 					this.lastKey = '';
+					return;
+				} else if (this.stepTimes) {
+					let lineNumber = parseInt(this.stepTimes);
+					// 判断lineNumber是否小于1或者大于总行数
+					if (lineNumber < 1 || lineNumber > this.getLineNumber(this.textEditor.value.length)) {
+						this.stepTimes = '';
+						return;
+					}
+					this.textEditor.selectionStart = this.getLineStartPos(lineNumber);
+					this.textEditor.selectionEnd = this.getLineStartPos(lineNumber);
+					this.stepTimes = '';
 					return;
 				} else {
 					this.lastKey = 'g';
@@ -1128,11 +1197,22 @@ class NotepadApp {
 				}
 			}
 
+			// o键插入空行
+			if (e.key === 'o') {
+				this.insertEmptyLine();
+				return;
+			}
+
 			// p键粘贴
 			if (e.key === 'p') {
+				if (this.copyText === '') {
+					// 如果应用内剪贴板为空，尝试从系统剪贴板读取
+					this.syncFromClipboard();
+				}
+
 				// 当copyText中的内容以换行符结尾时，插入新行
 				if (this.copyText.endsWith('\n')) {
-					this.insertLine();
+					this.insertLineText();
 					return;
 				}
 				// 否则在光标位置粘贴
