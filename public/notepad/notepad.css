@@ -9,6 +9,12 @@
 	--notepad-glass-blur: blur(3px);
 	--notepad-select-bg: #0078d4;
 	--notepad-select-text: #ffffff;
+	--notepad-scroll-bg: #252526;
+	--notepad-scroll-thumb: #454545;
+	--notepad-scroll-thumb-hover: #5a5a5a;
+	--notepad-focus-border: #0078d4;
+	--notepad-primary: #0078d4;
+	--notepad-primary-text: #ffffff;
 }
 
 body {
@@ -173,7 +179,6 @@ body {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
 }
 
 .text-editor {
@@ -197,6 +202,28 @@ body {
 	white-space: pre-wrap;
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+}
+
+/* 滚动条样式 */
+.text-editor::-webkit-scrollbar {
+	width: 12px;
+	height: 12px;
+	cursor: default;
+}
+.text-editor::-webkit-scrollbar-track {
+	background-color: var(--notepad-scroll-bg);
+	cursor: default;
+}
+
+.text-editor::-webkit-scrollbar-thumb {
+	background-color: var(--notepad-scroll-thumb);
+	border-radius: 2px;
+	cursor: default;
+}
+
+.text-editor::-webkit-scrollbar-thumb:hover {
+	background-color: var(--notepad-scroll-thumb-hover);
+	cursor: default;
 }
 
 /* 状态栏 */

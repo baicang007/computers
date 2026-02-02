@@ -198,9 +198,6 @@ class NotepadApp {
 			case 'paste':
 				this.paste();
 				break;
-			case 'delete':
-				this.delete();
-				break;
 			case 'find':
 				this.showFindDialog();
 				break;
@@ -349,7 +346,6 @@ class NotepadApp {
 			// 恢复光标位置
 			this.textEditor.selectionStart = cursorPosition;
 			this.textEditor.selectionEnd = cursorPosition;
-			this.updateStatus();
 		}
 	}
 
@@ -362,7 +358,6 @@ class NotepadApp {
 			// 恢复光标位置
 			this.textEditor.selectionStart = cursorPosition;
 			this.textEditor.selectionEnd = cursorPosition;
-			this.updateStatus();
 		}
 	}
 
@@ -382,7 +377,6 @@ class NotepadApp {
 			this.textEditor.selectionEnd = start;
 
 			this.saveToHistory();
-			this.updateStatus();
 		}
 	}
 
@@ -430,30 +424,7 @@ class NotepadApp {
 			this.textEditor.selectionEnd = start + this.copyText.length;
 
 			this.saveToHistory();
-			this.updateStatus();
 		}
-	}
-
-	delete() {
-		const start = this.textEditor.selectionStart;
-		const end = this.textEditor.selectionEnd;
-
-		if (start === end) {
-			// 删除光标后的一个字符
-			const value = this.textEditor.value;
-			this.textEditor.value = value.substring(0, start) + value.substring(start + 1);
-			this.textEditor.selectionStart = start;
-			this.textEditor.selectionEnd = start;
-		} else {
-			// 删除选中文本
-			const value = this.textEditor.value;
-			this.textEditor.value = value.substring(0, start) + value.substring(end);
-			this.textEditor.selectionStart = start;
-			this.textEditor.selectionEnd = start;
-		}
-
-		this.saveToHistory();
-		this.updateStatus();
 	}
 
 	selectAll() {
@@ -921,6 +892,11 @@ class NotepadApp {
 		this.textEditor.selectionEnd = this.textEditor.selectionStart;
 	}
 
+	// 判断是否有垂直滚动条
+	hasVerticalScrollbar(textarea) {
+		return textarea.scrollHeight > textarea.clientHeight;
+	}
+
 	// 复制行
 	copyLines(times) {
 		const lines = this.textEditor.value.split('\n');
@@ -1025,6 +1001,13 @@ class NotepadApp {
 			// 阻止默认行为
 			e.preventDefault();
 
+			// esc清空lastKey
+			if (e.key === 'Escape') {
+				this.lastKey = '';
+				return;
+			}
+
+			// 如果上一个按键是f，则进行查找操作
 			if (this.lastKey === 'f') {
 				// 如果按下的是字符或数字键，记录字符
 				if ((e.key >= 'a' && e.key <= 'z') || (e.key >= '0' && e.key <= '9')) {
@@ -1033,8 +1016,48 @@ class NotepadApp {
 					this.lastKey = '';
 					return;
 				}
+				let charlist = [
+					',',
+					'.',
+					';',
+					':',
+					'/',
+					'?',
+					'!',
+					'@',
+					'#',
+					'$',
+					'%',
+					'^',
+					'&',
+					'*',
+					'(',
+					')',
+					'-',
+					'_',
+					'=',
+					'+',
+					'[',
+					']',
+					'{',
+					'}',
+					'\\',
+					"'",
+					'|',
+					'`',
+					'~',
+					'<',
+					'>',
+					'"',
+				];
+				if (charlist.includes(e.key)) {
+					this.findText = e.key;
+					this.findNext();
+					this.lastKey = '';
+					return;
+				}
 				// console.log(e.key);
-				this.lastKey = '';
+				// this.lastKey = '';
 				return;
 			}
 
@@ -1043,6 +1066,7 @@ class NotepadApp {
 				this.vimMode = 'insert';
 				this.statusBar.vimModeStatus.textContent = '插入模式';
 				this.textEditor.classList.remove('normal-color-cursor');
+				this.textEditor.selectionEnd = this.textEditor.selectionStart;
 				return;
 			}
 
@@ -1054,6 +1078,7 @@ class NotepadApp {
 				return;
 			}
 
+			// f键查找下一个字符
 			if (e.key === 'f') {
 				this.lastKey = 'f';
 				return;
@@ -1066,10 +1091,11 @@ class NotepadApp {
 
 			// w键跳到下一个单词开头
 			if (e.key === 'w') {
-				const findTextlist = this.textEditor.value.slice(this.textEditor.selectionEnd).split(/\s+/);
-				if (findTextlist.length > 1) {
-					this.findText = findTextlist[1];
-					const nextWordPos = this.textEditor.value.indexOf(this.findText, this.textEditor.selectionEnd);
+				const textCursor = this.textEditor.value.slice(this.textEditor.selectionEnd);
+				const words = textCursor.split(/[\s\u3000\u3001\u3002\uff0c\uff0e\uff1b\uff1a\uff1f\uff01\u201c\u201d\u2018\u2019]+/);
+				if (words.length > 1) {
+					this.findText = words[1];
+					const nextWordPos = this.textEditor.selectionEnd + textCursor.indexOf(this.findText);
 					this.textEditor.selectionStart = nextWordPos;
 					this.textEditor.selectionEnd = nextWordPos;
 				} else {
@@ -1081,11 +1107,11 @@ class NotepadApp {
 
 			// b键跳到上一个单词开头
 			if (e.key === 'b') {
-				const textBeforeCursor = this.textEditor.value.slice(0, this.textEditor.selectionStart);
-				const words = textBeforeCursor.split(/\s+/);
+				const textCursor = this.textEditor.value.slice(0, this.textEditor.selectionStart);
+				const words = textCursor.split(/[\s\u3000\u3001\u3002\uff0c\uff0e\uff1b\uff1a\uff1f\uff01\u201c\u201d\u2018\u2019]+/);
 				if (words.length > 1) {
 					this.findText = words[words.length - 2];
-					const prevWordPos = textBeforeCursor.lastIndexOf(this.findText);
+					const prevWordPos = textCursor.lastIndexOf(this.findText);
 					this.textEditor.selectionStart = prevWordPos;
 					this.textEditor.selectionEnd = prevWordPos;
 				} else {
@@ -1106,6 +1132,9 @@ class NotepadApp {
 				if (this.lastKey === 'g') {
 					this.goToStart();
 					this.lastKey = '';
+					if (this.hasVerticalScrollbar(this.textEditor)) {
+						this.textEditor.scrollTop = 0;
+					}
 					return;
 				} else if (this.stepTimes) {
 					let lineNumber = parseInt(this.stepTimes);
@@ -1129,6 +1158,9 @@ class NotepadApp {
 				if (this.lastKey === 'g') {
 					this.goToEnd();
 					this.lastKey = '';
+					if (this.hasVerticalScrollbar(this.textEditor)) {
+						this.textEditor.scrollTop = this.textEditor.scrollHeight - this.textEditor.clientHeight;
+					}
 					return;
 				}
 			}
@@ -1136,6 +1168,9 @@ class NotepadApp {
 			// G跳到文件结尾
 			if (e.key === 'G') {
 				this.goToEnd();
+				if (this.hasVerticalScrollbar(this.textEditor)) {
+					this.textEditor.scrollTop = this.textEditor.scrollHeight - this.textEditor.clientHeight;
+				}
 				return;
 			}
 
@@ -1195,6 +1230,15 @@ class NotepadApp {
 					this.lastKey = 'd';
 					return;
 				}
+			}
+
+			// x键删除光标后的字符
+			if (e.key === 'x') {
+				if (this.stepTimes) {
+					this.textEditor.selectionEnd = this.textEditor.selectionStart + parseInt(this.stepTimes);
+				}
+				this.cut();
+				return;
 			}
 
 			// o键插入空行
@@ -1528,15 +1572,14 @@ class NotepadApp {
 			this.textEditor.selectionEnd = cursorPos + 1;
 		}
 		// 插入模式下，取消选中
-		if (this.vimMode === 'insert') {
-			this.textEditor.selectionStart = cursorPos;
-			this.textEditor.selectionEnd = cursorPos;
-		}
+		// if (this.vimMode === 'insert') {
+		// 	this.textEditor.selectionStart = cursorPos;
+		// 	this.textEditor.selectionEnd = cursorPos;
+		// }
 		// 可视模式下，保持选中状态不变
 		if (this.vimMode === 'visual') {
 			this.textEditor.selectionStart = cursorPos;
 			this.textEditor.selectionEnd = cursorEnd;
-			console.log('visual mode selection:', cursorPos, cursorEnd);
 		}
 	}
 
@@ -1560,7 +1603,6 @@ class NotepadApp {
 		// 更新剪切/复制/删除状态
 		const cutOption = document.querySelector('[data-action="cut"]');
 		const copyOption = document.querySelector('[data-action="copy"]');
-		const deleteOption = document.querySelector('[data-action="delete"]');
 
 		if (cutOption) {
 			cutOption.classList.toggle('disabled', !hasSelection);
@@ -1568,10 +1610,6 @@ class NotepadApp {
 
 		if (copyOption) {
 			copyOption.classList.toggle('disabled', !hasSelection);
-		}
-
-		if (deleteOption) {
-			deleteOption.classList.toggle('disabled', !hasSelection);
 		}
 	}
 
